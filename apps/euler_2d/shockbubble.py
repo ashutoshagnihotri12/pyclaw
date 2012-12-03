@@ -5,8 +5,22 @@ import numpy as np
 
 gamma = 1.4
 gamma1 = gamma - 1.
+x0=0.5; y0=0.; r0=0.2
+xshock = 0.2
+pinf=5.
+
+def inrad(y,x):
+    return (np.sqrt((x-x0)**2+(y-y0)**2)<r0)
+
+def ycirc(x,ymin,ymax):
+    if r0**2>((x-x0)**2):
+        return max(min(y0 + np.sqrt(r0**2-(x-x0)**2),ymax) - ymin,0.)
+    else:
+        return 0
 
 def qinit(state,x0=0.5,y0=0.,r0=0.2,rhoin=0.1,pinf=5.):
+    from scipy import integrate
+
     grid = state.grid
 
     rhoout = 1.
@@ -28,6 +42,24 @@ def qinit(state,x0=0.5,y0=0.,r0=0.2,rhoin=0.1,pinf=5.):
     state.q[2,:,:] = 0.
     state.q[3,:,:] = (pin*(r<=r0) + pout*(r>r0))/gamma1
     state.q[4,:,:] = 1.*(r<=r0)
+
+    #Now average for the cells on the edge of the bubble
+    d2 = np.linalg.norm(state.grid.delta)/2.
+    dx = state.grid.delta[0]
+    dy = state.grid.delta[1]
+    dx2 = state.grid.delta[0]/2.
+    dy2 = state.grid.delta[1]/2.
+    for i in xrange(state.q.shape[1]):
+        for j in xrange(state.q.shape[2]):
+            ydown = y[j]-dy2
+            yup   = y[j]+dy2
+            if abs(r[i,j]-r0)<d2:
+                infrac,abserr = integrate.quad(ycirc,x[i]-dx2,x[i]+dx2,args=(ydown,yup),epsabs=1.e-8,epsrel=1.e-5)
+                infrac=infrac/(dx*dy)
+                state.q[0,i,j] = rhoin*infrac + rhoout*(1.-infrac)
+                state.q[3,i,j] = (pin*infrac + pout*(1.-infrac))/gamma1
+                state.q[4,i,j] = 1.*infrac
+
 
 def auxinit(state):
     """
