@@ -2,163 +2,85 @@
 
 #include <iostream>
 
-#include "test.h"
-
 // Defined falgs to switch between GPUs for debug or run
 #define GPU_RELEASE 0
 #define GPU_DEBUG 1
 
+
+// Problem Objects
 template<class Vis>
 Vis* GlutInterface<Vis>::visualizer = NULL;
 
 // This object holds the solver and limiter, and must be generated
 typedef Visualizer2D<acoustics_horizontal, acoustics_vertical, limiter_MC, 
 	boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective>> acoustics_vis;
+	//boundaryConditions<BC_left_absorbing, BC_right_absorbing, BC_up_absorbing, BC_down_absorbing>> acoustics_vis;
+
+typedef Visualizer2D<shallow_water_horizontal, shallow_water_vertical, limiter_MC, 
+	boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective>> shallowWater_vis;
 
 int main(int argc, char** argv)
 {
 	setupCUDA();
 
 	// Boundary setup
-	boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective> conditions;
+	boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective> reflective_conditions;
 
 	BC_left_reflective left;
 	BC_right_reflective right;
 	BC_up_reflective up;
 	BC_down_reflective down;
 
-	conditions.condition_left = left;
-	conditions.condition_right = right;
-	conditions.condition_up = up;
-	conditions.condition_down = down;
+	//boundaryConditions<BC_left_absorbing, BC_right_absorbing, BC_up_absorbing, BC_down_absorbing> absorbing_conditions;
+	//BC_left_absorbing left;
+	//BC_right_absorbing right;
+	//BC_up_absorbing up;
+	//BC_down_absorbing down;
+
+	reflective_conditions.condition_left = left;
+	reflective_conditions.condition_right = right;
+	reflective_conditions.condition_up = up;
+	reflective_conditions.condition_down = down;
 
 	// Solver setup
+	// acoustics
 	acoustics_horizontal acoustic_h;
 	acoustics_vertical   acoustic_v;
+	// shallow water
+	shallow_water_horizontal shallow_water_h;
+	shallow_water_vertical   shallow_water_v;
 
 	// Limiter setup
 	limiter_MC phi;
+	limiter_superbee phi1;
 
-	GlutInterface<acoustics_vis>::InitGlut(argc, argv, 512, 512, CELLSX, CELLSY);	// the last 2 arguments are the resolution of the texture, may be changed inside the method
+	//GlutInterface<acoustics_vis>::InitGlut(argc, argv, 512, 512, CELLSX, CELLSY);	// the last 2 arguments are the resolution of the texture, may be changed inside the method
+	GlutInterface<shallowWater_vis>::InitGlut(argc, argv, 512, 512, CELLSX, CELLSY);	// the last 2 arguments are the resolution of the texture, may be changed inside the method
 
-	pdeParam problemParam = setupAcoustics(circle_q, uniform_coefficients);
+	real ratio = (real)CELLSY/(real)CELLSX;
 
-	GlutInterface<acoustics_vis>::visualizer->setParam(problemParam);
-	GlutInterface<acoustics_vis>::visualizer->setBoundaryConditions(conditions);
-	GlutInterface<acoustics_vis>::visualizer->setSolvers(acoustic_h, acoustic_v);
-	GlutInterface<acoustics_vis>::visualizer->setLimiter(phi);
-	GlutInterface<acoustics_vis>::visualizer->initializeDisplay();
-	GlutInterface<acoustics_vis>::visualizer->launchDisplay();
+	pdeParam problemParam = setupShallowWater(-1, 1, -1, ratio, radial_plateau);
 
-	// We never reach this step as the game loop is launched before it
-	gracefulExit(problemParam);
-}
+	GlutInterface<shallowWater_vis>::visualizer->setParam(problemParam);
+	GlutInterface<shallowWater_vis>::visualizer->setBoundaryConditions(reflective_conditions);
+	GlutInterface<shallowWater_vis>::visualizer->setSolvers(shallow_water_h, shallow_water_v);
+	GlutInterface<shallowWater_vis>::visualizer->setLimiter(phi);
+	GlutInterface<shallowWater_vis>::visualizer->initializeDisplay();
+	GlutInterface<shallowWater_vis>::visualizer->launchDisplay();
 
-void mid_Gaussian_q(pdeParam &param)
-{
-	size_t size = param.cellsX*param.cellsY*param.numStates*sizeof(real);
-	real* cpu_q = (real*)malloc(size);
+	//pdeParam problemParam = setupAcoustics(0,1,0,ratio, /*off_circle_q/*/centered_circle_q/**/, uniform_coefficients);
 
-	real center_r = param.cellsX/2;
-	real center_c = param.cellsY/2;
-	real x;
-	real y;
-
-	for (int row = 0; row < param.cellsY; row++)
-		for (int col = 0; col < param.cellsX; col++)
-			for (int state = 0; state < param.numStates; state++)
-			{
-				if (state == 0)
-				{
-					x = param.width*(row-center_r)/(real)param.cellsY;
-					y = param.height*(col-center_c)/(real)param.cellsX;
-					param.setElement_q_cpu(cpu_q, row, col, state, exp( -((x*x)+(y*y))/0.1 )  );
-				}
-				else
-				{
-					param.setElement_q_cpu(cpu_q, row, col, state, 0.0 );
-				}
-			}
-
-	cudaError_t memCpyCheck = cudaMemcpy(param.qNew, cpu_q, size, cudaMemcpyHostToDevice);
-	free(cpu_q);
-}
-void circle_q(pdeParam &param)
-{
-	size_t size = param.cellsX*param.cellsY*param.numStates*sizeof(real);
-	real* cpu_q = (real*)malloc(size);
+	//GlutInterface<acoustics_vis>::visualizer->setParam(problemParam);
+	//GlutInterface<acoustics_vis>::visualizer->setBoundaryConditions(reflective_conditions);
+	//GlutInterface<acoustics_vis>::visualizer->setSolvers(acoustic_h, acoustic_v);
+	//GlutInterface<acoustics_vis>::visualizer->setLimiter(phi);
+	//GlutInterface<acoustics_vis>::visualizer->initializeDisplay();
+	//GlutInterface<acoustics_vis>::visualizer->launchDisplay();
 	
-	real pi = 3.14159;
-	real w = 0.2;	// multiplier that determines the span/largeness of the bell curve
-
-	real center_r = param.cellsX/2;
-	real center_c = param.cellsY/2;
-	real x;
-	real y;
-	real r;
-
-	for (int row = 0; row < param.cellsY; row++)
-		for (int col = 0; col < param.cellsX; col++)
-			for (int state = 0; state < param.numStates; state++)
-			{
-				if (state == 0)
-				{
-					x = param.width*(row-center_r)/(real)param.cellsY;
-					y = param.height*(col-center_c)/(real)param.cellsX;
-					r = sqrt(x*x + y*y);
-					if ( abs(r-0.25) <= w )
-						param.setElement_q_cpu(cpu_q, row, col, state, (1 + cos( pi*(r-0.25)/w))/4.0f);//exp( -((r-0.25)*(r-0.25))/0.02 )  );
-					else
-						param.setElement_q_cpu(cpu_q, row, col, state, 0.0);
-				}
-				else
-				{
-					param.setElement_q_cpu(cpu_q, row, col, state, 0.0);
-				}
-			}
-
-	cudaError_t memCpyCheck = cudaMemcpy(param.qNew, cpu_q, size, cudaMemcpyHostToDevice);
-	free(cpu_q);
+	// We never reach this step as the game loop is launched before it
+	gracefulExit();
 }
-void uniform_coefficients(pdeParam &param, real* u)
-{
-	size_t size = param.cellsX*param.cellsY*param.numCoeff*sizeof(real);
-	real* cpu_coeff = (real*)malloc(size);
 
-	for (int row = 0; row < param.cellsY; row++)
-	{
-		for (int col = 0; col < param.cellsX; col++)
-		{
-			for (int coeff = 0; coeff < param.numCoeff; coeff++)
-			{
-				param.setElement_coeff_cpu(cpu_coeff, row, col, coeff, u[coeff]);
-			}
-		}
-	}
-
-	cudaError_t memCpyCheck = cudaMemcpy(param.coefficients, cpu_coeff, size, cudaMemcpyHostToDevice);
-	free(cpu_coeff);
-}
-pdeParam setupAcoustics(void (*init_q)(pdeParam &), void (*init_coeff)(pdeParam &,real*) )
-{
-	pdeParam param(
-		CELLSX,	//cellsX
-		CELLSY,	//cellsY
-		2,		//ghostCells
-		3,		//numStates
-		2,		//numWaves
-		2,		//numCoeff
-		0,		//startX
-		1,		//endX
-		0,		//startY
-		1);		//endY
-
-	real u[2] = {1.0, 4.0};
-	init_q(param);
-	init_coeff(param, u);
-
-	return param;
-}
 void setupCUDA()
 {
 	int device = GPU_DEBUG;	//1 for debug 0 for run, chooses the gpu
@@ -183,7 +105,6 @@ void setupCUDA()
 		//cudaError_t errorCachePref2 = cudaFuncSetCacheConfig("fused_Riemann_limiter_vertical_update_kernel", cudaFuncCachePreferShared);
 		//printf("Cache configuration done, config1: %i, config2: %i\n",errorCachePref1,errorCachePref2);
 	}
-
 }
 template <class T>
 inline void getCudaAttribute(T *attribute, CUdevice_attribute device_attribute)
@@ -197,7 +118,7 @@ inline void getCudaAttribute(T *attribute, CUdevice_attribute device_attribute)
         exit(-1);
     }
 }
-void gracefulExit(pdeParam &param)
+void gracefulExit()
 {
 	delete(GlutInterface<acoustics_vis>::visualizer);
 	cudaThreadExit();

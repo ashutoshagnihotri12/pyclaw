@@ -30,6 +30,7 @@
     <ClInclude Include="fused_Riemann_Limiter_headers.h" />
     <ClInclude Include="glext.h" />
     <ClInclude Include="glInfo.h" />
+    <ClInclude Include="problem_setup.h" />
     <ClInclude Include="Limiters.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClInclude>
@@ -42,7 +43,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="step.h" />
-    <ClInclude Include="test.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Visualizer2D.h" />
     <ClInclude Include="Visualizer2D_header.h" />
@@ -61,6 +61,7 @@
   <ItemGroup>
     <ClCompile Include="glInfo.cpp" />
     <ClCompile Include="GlutInterface.h" />
+    <ClCompile Include="probleml_setup.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="Visualizer2D.tpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>

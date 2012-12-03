@@ -30,6 +30,34 @@ inline __device__ void setSharedWave(real* sharedWaves, int row, int col, int wa
 	sharedWaves[getIndex_sharedWaves(row, col, waveNum, state, numStates, numWaves, blockWidth)] = newVal;
 }
 
+
+inline __device__ int getIndex_sharedWaves_flat1(int row, int col, int waveNum, int state, int numStates, int blockSize, int blockWidth)// state 1 of waves1, state 2 of waves1, state 3 of waves1, state 1 of waves2, ...
+{
+	return (waveNum*blockSize*numStates + state*blockSize + row*blockWidth + col);
+}
+inline __device__ real &getSharedWave_flat1(real* sharedWaves, int row, int col, int waveNum, int state, int numStates, int blockSize, int blockWidth)
+{
+	return sharedWaves[getIndex_sharedWaves_flat1(row, col, waveNum, state, numStates, blockSize, blockWidth)];
+}
+inline __device__ void setSharedWave_flat1(real* sharedWaves, int row, int col, int waveNum, int state, int numStates, int blockSize, int blockWidth, real newVal)
+{
+	sharedWaves[getIndex_sharedWaves_flat1(row, col, waveNum, state, numStates, blockSize, blockWidth)] = newVal;
+}
+
+
+inline __device__ int getIndex_sharedWaves_flat2(int row, int col, int waveNum, int state, int numWaves, int blockSize, int blockWidth)// state 1 of waves1, state 1 of waves2, state 1 of waves3, state 2 of waves1, ...
+{
+	return (state*blockSize*numWaves + waveNum*blockSize + row*blockWidth + col);
+}
+inline __device__ real &getSharedWave_flat2(real* sharedWaves, int row, int col, int waveNum, int state, int numWaves, int blockSize, int blockWidth)
+{
+	return sharedWaves[getIndex_sharedWaves_flat2(row, col, waveNum, state, numWaves, blockSize, blockWidth)];
+}
+inline __device__ void setSharedWave_flat2(real* sharedWaves, int row, int col, int waveNum, int state, int numWaves, int blockSize, int blockWidth, real newVal)
+{
+	sharedWaves[getIndex_sharedWaves_flat2(row, col, waveNum, state, numWaves, blockSize, blockWidth)] = newVal;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////  Wave Speeds  //////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -46,6 +74,18 @@ inline __device__ void setWaveSpeed(real* waveSpeeds, int row, int col, int wave
 	waveSpeeds[getIndex_waveSpeed(row, col, waveNum, numWaves, blockWidth)] = newSpeed;
 }
 
+inline __device__ int getIndex_waveSpeed_flat(int row, int col, int waveNum, int blockSize, int blockWidth)
+{
+	return (waveNum*blockSize + row*blockWidth + col);
+}
+inline __device__ real &getWaveSpeed_flat(real* waveSpeeds, int row, int col, int waveNum, int blockSize, int blockWidth)
+{
+	return waveSpeeds[getIndex_waveSpeed_flat(row, col, waveNum, blockSize, blockWidth)];
+}
+inline __device__ void setWaveSpeed_flat(real* waveSpeeds, int row, int col, int waveNum, int blockSize, int blockWidth, real newSpeed)
+{
+	waveSpeeds[getIndex_waveSpeed_flat(row, col, waveNum, blockSize, blockWidth)] = newSpeed;
+}
 
 // As a general rule a Riemann solver must have the following arguments:
 // Input:
@@ -137,6 +177,115 @@ struct acoustics_vertical
 	}
 };
 
+struct shallow_water_horizontal
+{
+	__device__ void operator() (real* q_left, real* q_right, int numStates, real* u_left, real* u_right,	// input
+								real* wave, real* waveSpeeds)												// output
+	{
+		// try rearanging, or using ul and ur, vl and vr variables instead of dividing every time!
+		real g = 9.8;
+
+		real h_left   = q_left[0];
+		real hu_left  = q_left[1];
+		real hv_left  = q_left[2];
+		
+		real h_right  = q_right[0];
+		real hu_right = q_right[1];
+		real hv_right = q_right[2];
+
+		real h_bar = 0.5f*(h_left + h_right);
+		real sqrt_h_left  = sqrt(h_left);
+		real sqrt_h_right = sqrt(h_right);
+
+		//real sum_sqrt_hleft_hright = sqrt_h_left + sqrt_h_right;
+
+		real u_hat = ((hu_left/sqrt_h_left)+(hu_right/sqrt_h_right))/(sqrt_h_left + sqrt_h_right);
+		real v_hat = ((hv_left/sqrt_h_left)+(hv_right/sqrt_h_right))/(sqrt_h_left + sqrt_h_right);
+
+		//real a_left  = h_left*u_hat - hu_left;
+		//real a_right = hu_right - h_right*u_hat;
+		//real v_hat   = (a_left*(hv_left/h_left) + a_right*(hv_right/h_right)) / (a_left+a_right);
+
+		real c_hat = sqrt(g*h_bar);
+		
+		waveSpeeds[0] = u_hat - c_hat;
+		waveSpeeds[1] = u_hat;
+		waveSpeeds[2] = u_hat + c_hat;
+
+		real alpha1 = 0.5f*((u_hat + c_hat)*(h_right - h_left) - (hu_right - hu_left))/c_hat;
+		real alpha2 = (hv_right-hv_left)-v_hat*(h_right - h_left);
+		real alpha3 = 0.5f*((c_hat - u_hat)*(h_right - h_left) + (hu_right - hu_left))/c_hat;
+
+
+		wave[0 + 0*numStates] = alpha1;
+		wave[1 + 0*numStates] = alpha1*(u_hat - c_hat);
+		wave[2 + 0*numStates] = alpha1*v_hat;
+
+		wave[0 + 1*numStates] = 0.0f;
+		wave[1 + 1*numStates] = 0.0f;
+		wave[2 + 1*numStates] = alpha2;
+
+		wave[0 + 2*numStates] = alpha3;
+		wave[1 + 2*numStates] = alpha3*(u_hat + c_hat);
+		wave[2 + 2*numStates] = alpha3*v_hat;
+	}
+};
+struct shallow_water_vertical
+{
+	__device__ void operator() (real* q_left, real* q_right, int numStates, real* u_left, real* u_right,	// input
+								real* wave, real* waveSpeeds)												// output
+	{
+		// try rearanging, or using ul and ur, vl and vr variables instead of dividing every time!
+		real g = 9.8;
+
+		real h_left   = q_left[0];
+		real hu_left  = q_left[1];
+		real hv_left  = q_left[2];
+		
+		real h_right  = q_right[0];
+		real hu_right = q_right[1];
+		real hv_right = q_right[2];
+
+		real h_bar = 0.5f*(h_left + h_right);
+		real sqrt_h_left  = sqrt(h_left);
+		real sqrt_h_right = sqrt(h_right);
+
+		//real sum_sqrt_hleft_hright = sqrt_h_left + sqrt_h_right;
+
+		//real u_hat = ((hu_left/sqrt_h_left)+(hu_right/sqrt_h_right))/(sqrt_h_left + sqrt_h_right);
+		//real v_hat = ((hv_left/sqrt_h_left)+(hv_right/sqrt_h_right))/(sqrt_h_left + sqrt_h_right);
+		//real a_left  = h_left*u_hat - hu_left;
+		//real a_right = hu_right - h_right*u_hat;
+		//real v_hat   = (a_left*(hv_left/h_left) + a_right*(hv_right/h_right)) / (a_left+a_right);
+
+		real u_hat = (hu_left/sqrt_h_left + hu_right/sqrt_h_right)/(sqrt_h_left + sqrt_h_right);
+		real v_hat = (hv_left/sqrt_h_left + hv_right/sqrt_h_right)/(sqrt_h_left + sqrt_h_right);
+
+
+		real c_hat = sqrt(g*h_bar);
+		
+		waveSpeeds[0] = v_hat - c_hat;
+		waveSpeeds[1] = v_hat;
+		waveSpeeds[2] = v_hat + c_hat;
+
+		real alpha1 = 0.5f*((v_hat + c_hat)*(h_right - h_left) - (hv_right - hv_left))/c_hat;
+		real alpha2 = -(hu_right-hu_left) + u_hat*(h_right - h_left);
+		real alpha3 = 0.5f*((c_hat - v_hat)*(h_right - h_left) + (hv_right - hv_left))/c_hat;
+
+
+		wave[0 + 0*numStates] = alpha1;
+		wave[1 + 0*numStates] = alpha1*u_hat;
+		wave[2 + 0*numStates] = alpha1*(v_hat - c_hat);
+
+		wave[0 + 1*numStates] = 0.0f;
+		wave[1 + 1*numStates] = -alpha2;
+		wave[2 + 1*numStates] = 0.0f;
+
+		wave[0 + 2*numStates] = alpha3;
+		wave[1 + 2*numStates] = alpha3*u_hat;
+		wave[2 + 2*numStates] = alpha3*(v_hat + c_hat);
+	}
+};
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////   Limiters   //////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -153,7 +302,7 @@ __device__ real limiting (Limiter phi, real* main_wave, real* aux_wave)
 	}
 
 	if (main_wave_norm_square < EPSILON)
-		return (real)0.0f;
+		return (real)1.0f;
 	return phi(aux_wave_dot_main_wave/main_wave_norm_square);
 }
 

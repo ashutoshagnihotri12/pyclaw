@@ -5,7 +5,7 @@
 #include "fused_Riemann_Limiter.h"
 
 template <class Riemann_h, class Riemann_v, class Limiter, class BCS>
-void step	(pdeParam &param,						// Problem parameters
+real step	(pdeParam &param,						// Problem parameters
 			 Riemann_h Riemann_pointwise_solver_h,	// Riemann problem solver for vertical interfaces, device function
 			 Riemann_v Riemann_pointwise_solver_v,	// Riemann problem solver for horizontal interfaces device function
 			 Limiter limiter_phi,					// limiter device function called from a fused Riemann-Limiter function,
@@ -13,15 +13,17 @@ void step	(pdeParam &param,						// Problem parameters
 			 BCS boundary_conditions)				// Boundary conditions put in one object
 
 {
-	static real absolute_fastest_speed = 2.0;
-
-	real dt = 0.99/(absolute_fastest_speed/param.dx + absolute_fastest_speed/param.dy); /*/ param.dx/5;	//	awesome failing effects!!/*/
+	static real dt = (real)0.0f; /*/ param.dx/5;	//	awesome failing effects!!/*/
 
 	setBoundaryConditions(param, boundary_conditions);
 	
 	limited_Riemann_Update(param, dt, Riemann_pointwise_solver_h, Riemann_pointwise_solver_v, limiter_phi);
+	
+	cudaMemcpy(&dt, param.waveSpeedsX, sizeof(real), cudaMemcpyDeviceToHost);
 
-	cudaMemcpy(&absolute_fastest_speed, param.waveSpeeds, sizeof(real), cudaMemcpyDeviceToHost);
+	//printf("time step dt: %f\n", dt);
+
+	return dt;
 }
 
 #endif

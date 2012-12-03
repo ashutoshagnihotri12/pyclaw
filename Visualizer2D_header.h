@@ -5,11 +5,9 @@
 #include <windows.h>
 #endif
 
-
-#include "common.h"
 #include <iostream>
 
-
+#include "common.h"
 #include "glInfo.h"
 #include <cuda_gl_interop.h>
 
@@ -47,8 +45,6 @@ PFNGLUNMAPBUFFERARBPROC pglUnmapBufferARB = 0;                   // unmap PBO pr
 #endif
 #endif
 #endif
-
-#define MAX_RESOLUTION 512
 
 //TODO: Add interactivity, or not
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

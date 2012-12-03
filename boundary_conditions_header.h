@@ -21,9 +21,9 @@ public:
 // ! The number of rows (or columns) includes the boundaries on both sides
 struct BC_left_absorbing
 {
-	__device__ void operator()(pdeParam param)
+	__device__ void operator()(pdeParam param, int row)
 	{
-		int row = threadIdx.x + blockDim.x*blockIdx.x;
+		//int row = threadIdx.x + blockDim.x*blockIdx.x;
 
 		int range = param.cellsY;
 		int boundary_start = 0;
@@ -37,9 +37,9 @@ struct BC_left_absorbing
 };
 struct BC_right_absorbing
 {
-	__device__ void operator()(pdeParam param)
+	__device__ void operator()(pdeParam param, int row)
 	{
-		int row = threadIdx.x + blockDim.x*blockIdx.x;
+		//int row = threadIdx.x + blockDim.x*blockIdx.x;
 
 		int range = param.cellsY;
 		int boundary_start = param.cellsX - param.ghostCells;
@@ -53,9 +53,9 @@ struct BC_right_absorbing
 };
 struct BC_down_absorbing
 {
-	__device__ void operator()(pdeParam param)
+	__device__ void operator()(pdeParam param, int col)
 	{
-		int col = threadIdx.x + blockDim.x*blockIdx.x;
+		//int col = threadIdx.x + blockDim.x*blockIdx.x;
 
 		int range = param.cellsX;
 		int boundary_start = param.cellsY - param.ghostCells;
@@ -69,9 +69,9 @@ struct BC_down_absorbing
 };
 struct BC_up_absorbing
 {
-	__device__ void operator()(pdeParam param)
+	__device__ void operator()(pdeParam param, int col)
 	{
-		int col = threadIdx.x + blockDim.x*blockIdx.x;
+		//int col = threadIdx.x + blockDim.x*blockIdx.x;
 
 		int range = param.cellsX;
 		int boundary_start = 0;
@@ -88,9 +88,9 @@ struct BC_up_absorbing
 
 struct BC_left_reflective
 {
-	__device__ void operator()(pdeParam param)
+	__device__ void operator()(pdeParam param, int row)
 	{
-		int row = threadIdx.x + blockDim.x*blockIdx.x;
+		//int row = threadIdx.x + blockDim.x*blockIdx.x;
 
 		int range = param.cellsY;
 		int boundary_start = 0;
@@ -99,18 +99,21 @@ struct BC_left_reflective
 
 		if ( row < range )													// the number of working threads must be equal to the number of existing rows
 			for (int col = boundary_start; col < boundary_end; col++)		// could be modified to be handled by threads in the y directions
-				for ( int k = 0; k < param.numStates; k++)					// could be modified to be handled by threads in the z directions
-					if (k == 0)
-						param.setElement_qNew(row, col, k, param.getElement_qNew(row, boundary_end + boundary_length - 1 - col, k));
-					else
+			{
+				param.setElement_qNew(row, col, 0, param.getElement_qNew(row, boundary_end + boundary_length - 1 - col, 0));
+				for ( int k = 1; k < param.numStates; k++)					// could be modified to be handled by threads in the z directions
+					//if (k == 0)
+					//	param.setElement_qNew(row, col, k, param.getElement_qNew(row, boundary_end + boundary_length - 1 - col, k));
+					//else
 						param.setElement_qNew(row, col, k,-param.getElement_qNew(row, boundary_end + boundary_length - 1 - col, k));
+			}
 	}
 };
 struct BC_right_reflective
 {
-	__device__ void operator()(pdeParam param)
+	__device__ void operator()(pdeParam param, int row)
 	{
-		int row = threadIdx.x + blockDim.x*blockIdx.x;
+		//int row = threadIdx.x + blockDim.x*blockIdx.x;
 
 		int range = param.cellsY;
 		int boundary_start = param.cellsX - param.ghostCells;
@@ -118,38 +121,45 @@ struct BC_right_reflective
 
 		if ( row < range )													// the number of working threads must be equal to the number of existing rows
 			for (int col = boundary_start; col < boundary_end; col++)		// could be modified to be handled by threads in the y directions
-				for ( int k = 0; k < param.numStates; k++)					// could be modified to be handled by threads in the z directions
-					if ( k == 0)
-						param.setElement_qNew(row, col, k, param.getElement_qNew(row, boundary_start -(col - boundary_start), k));
-					else
+			{
+				param.setElement_qNew(row, col, 0, param.getElement_qNew(row, boundary_start -(col - boundary_start), 0));
+				for ( int k = 1; k < param.numStates; k++)					// could be modified to be handled by threads in the z directions
+					//if ( k == 0)
+					//	param.setElement_qNew(row, col, k, param.getElement_qNew(row, boundary_start -(col - boundary_start), k));
+					//else
 						param.setElement_qNew(row, col, k,-param.getElement_qNew(row, boundary_start -(col - boundary_start), k));
-	}
-};
-struct BC_down_reflective
-{
-	__device__ void operator()(pdeParam param)
-	{
-		int col = threadIdx.x + blockDim.x*blockIdx.x;
-
-		int range = param.cellsX;
-		int boundary_start = param.cellsY - param.ghostCells;
-		int boundary_end = param.cellsY;
-		int reverse_counter = 1;		// replaced the working but undreadable construct (row-boundary_start+1)
-
-		if ( col < range )																		// the number of working threads must be equal to the number of existing rows
-			for (int row = boundary_start; row < boundary_end; row++, reverse_counter++)		// could be modified to be handled by threads in the y directions
-				for ( int k = 0; k < param.numStates; k++)										// could be modified to be handled by threads in the z directions
-					if (k == 0)
-						param.setElement_qNew(row, col, k, param.getElement_qNew(boundary_start - reverse_counter, col, k));
-					else
-						param.setElement_qNew(row, col, k,-param.getElement_qNew(boundary_start - reverse_counter, col, k));
+			}
 	}
 };
 struct BC_up_reflective
 {
-	__device__ void operator()(pdeParam param)
+	__device__ void operator()(pdeParam param, int col)
 	{
-		int col = threadIdx.x + blockDim.x*blockIdx.x;
+		//int col = threadIdx.x + blockDim.x*blockIdx.x;
+
+		int range = param.cellsX;
+		int boundary_start = param.cellsY - param.ghostCells;
+		int boundary_end = param.cellsY;
+		int reverse_counter = 1;		// replaced the working but unreadable construct (row-boundary_start+1)
+
+
+		if ( col < range )																		// the number of working threads must be equal to the number of existing rows
+			for (int row = boundary_start; row < boundary_end; row++, reverse_counter++)		// could be modified to be handled by threads in the y directions
+			{
+				param.setElement_qNew(row, col, 0, param.getElement_qNew(boundary_start - reverse_counter, col, 0));
+				for (int k = 1; k < param.numStates; k++)										// could be modified to be handled by threads in the z directions
+					//if (k == 0)
+					//	param.setElement_qNew(row, col, k, param.getElement_qNew(boundary_start - reverse_counter, col, k));
+					//else
+						param.setElement_qNew(row, col, k,-param.getElement_qNew(boundary_start - reverse_counter, col, k));
+			}
+	}
+};
+struct BC_down_reflective
+{
+	__device__ void operator()(pdeParam param, int col)
+	{
+		//int col = threadIdx.x + blockDim.x*blockIdx.x;
 
 		int range = param.cellsX;
 		int boundary_start = 0;
@@ -158,11 +168,14 @@ struct BC_up_reflective
 
 		if ( col < range )																		// the number of working threads must be equal to the number of existing rows
 			for (int row = boundary_start; row < boundary_end; row++, reverse_counter--)		// could be modified to be handled by threads in the y directions
-				for ( int k = 0; k < param.numStates; k++)										// could be modified to be handled by threads in the z directions
-					if (k == 0)
-						param.setElement_qNew(row, col, k, param.getElement_qNew(boundary_end + reverse_counter, col, k));
-					else
+			{
+				param.setElement_qNew(row, col, 0, param.getElement_qNew(boundary_end + reverse_counter, col, 0));
+				for ( int k = 1; k < param.numStates; k++)										// could be modified to be handled by threads in the z directions
+					//if (k == 0)
+					//	param.setElement_qNew(row, col, k, param.getElement_qNew(boundary_end + reverse_counter, col, k));
+					//else
 						param.setElement_qNew(row, col, k,-param.getElement_qNew(boundary_end + reverse_counter, col, k));
+			}
 	}
 };
 
