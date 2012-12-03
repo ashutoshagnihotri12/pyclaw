@@ -34,9 +34,6 @@
     <ClInclude Include="Visualizer2D_header.h">
       <Filter>Visualizer\header</Filter>
     </ClInclude>
-    <ClInclude Include="test.h">
-      <Filter>header</Filter>
-    </ClInclude>
     <ClInclude Include="boundary_conditions_header.h">
       <Filter>header</Filter>
     </ClInclude>
@@ -56,6 +53,9 @@
       <Filter>source\excluded from build</Filter>
     </ClInclude>
     <ClInclude Include="fused_Riemann_Limiter.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="problem_setup.h">
       <Filter>header</Filter>
     </ClInclude>
   </ItemGroup>
@@ -117,6 +117,9 @@
     </ClCompile>
     <ClCompile Include="Visualizer2D.tpp">
       <Filter>Visualizer\source\excluded from build</Filter>
+    </ClCompile>
+    <ClCompile Include="probleml_setup.cpp">
+      <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

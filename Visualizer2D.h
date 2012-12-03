@@ -36,7 +36,7 @@ Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::Visualizer2D(int window_width,
 	state_display = 0;
 	boundary_display = true;
 	
-	hold = false;
+	hold = true;
 	step_once = false;
 	stopDisplay = false;
 	colorScheme = true;
@@ -467,6 +467,8 @@ inline void Visualizer2D<Riemann_h, Riemann_v,  Limiter, BCS>::checkGPUCompatibi
 template<class Riemann_h, class Riemann_v, class Limiter, class BCS>
 inline void Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::visualizePDE()
 {
+	static real simulation_time = (real)0.0f;
+	static real simulation_timestamp = (real)0.0f;
 	Timer mainLoopTimer;
 	Timer stepWatch;
 	Timer copyWatch;
@@ -484,25 +486,24 @@ inline void Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::visualizePDE()
 
 	/***********************************************Display and Update***********************************************/
 	
-	if (!stopDisplay)
+	if (!stopDisplay && simulation_timestamp >= (real)0.001f )		// simulation view speed, we view the simulation every x (0.001) seconds, TODO: make this a controllable variable
 	{
 		copyWatch.start();
 		cudaGraphicsMapResources(1, &PBO_DISP_CUDA_resource, 0);
 		cudaGraphicsResourceGetMappedPointer((void **)&PBO_DISP_data_d, &displaySize, PBO_DISP_CUDA_resource);
 
 		// This function can be modified to put the read data into a format that can be used for colored mapping
-		/*copyDisplayData(PBO_DISP_data_d, dispResolutionX, dispResolutionY,
-						param->qNew, param->cellsX, param->cellsY, param->numStates, param->ghostCells,
-						state_display, boundary_display, intensity);/*/
 		copyDisplayData_Flat(PBO_DISP_data_d, dispResolutionX, dispResolutionY,
 						param->qNew, param->cellsX, param->cellsY, param->numStates, param->ghostCells,
 						state_display, boundary_display, colorScheme, intensity);/**/
 
-		// would be useable if double texture is supported, and boundaries are to be included:		// turns out not really, when padding is on
+		// The below would be useable if double texture is supported, and boundaries are to be included:		// turns out not really, when padding is on
 		// Not just padding, different sizes of resolution and data size...
 		//cudaMemcpy(PBO_DISP_data_d, param->qNew, displaySize, cudaMemcpyDeviceToDevice);
 
 		cudaGraphicsUnmapResources(1, &PBO_DISP_CUDA_resource, 0);
+		simulation_time += simulation_timestamp;
+		simulation_timestamp = (real)0.0f;
 		copyWatch.stop();
 	}
 
@@ -524,7 +525,7 @@ inline void Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::visualizePDE()
 	if ( !hold || (hold && step_once) )
 	{
 			stepWatch.start();
-			step(*param, horizontal_solver, vertical_solver, limiter_function, boundary_conditions);
+			simulation_timestamp += step(*param, horizontal_solver, vertical_solver, limiter_function, boundary_conditions);
 			cudaThreadSynchronize();
 			stepWatch.stop();
 	}
@@ -541,8 +542,7 @@ inline void Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::visualizePDE()
 	
 	mainLoopTimer.stop();
 
-	update(stepWatch.getElapsedTimeInMilliSec(), copyWatch.getElapsedTimeInMilliSec(), mainLoopTimer.getElapsedTimeInMilliSec());
-	//printf("\tloop: %10fms\n", mainLoopTimer.getElapsedTimeInMilliSec());
+	update(stepWatch.getElapsedTimeInMilliSec(), copyWatch.getElapsedTimeInMilliSec(), mainLoopTimer.getElapsedTimeInMilliSec());	// pass the simulation time to this to display
 }
 template<class Riemann_h, class Riemann_v, class Limiter, class BCS>
 inline void Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::checkChanges()

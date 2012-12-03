@@ -3,10 +3,14 @@
 
 #include "boundary_conditions_header.h"
 
-template<class BC>
-__global__ void boundary_kernel(pdeParam param, BC condition)
+template<class BCS>
+__global__ void boundary_kernel(pdeParam param, BCS conditions)
 {
-	condition(param);
+	int thread_global_id = threadIdx.x + blockDim.x*blockIdx.x;
+	conditions.condition_left(param, thread_global_id);
+	conditions.condition_right(param, thread_global_id);
+	conditions.condition_up(param, thread_global_id);
+	conditions.condition_down(param, thread_global_id);
 }
 
 template<class BCS>
@@ -20,10 +24,7 @@ void setBoundaryConditions(pdeParam& param, BCS bcs)
 	dim3 dimGrid(gridDimensionX);
 	dim3 dimBlock(blockDimensionX);
 
-	boundary_kernel<<<dimGrid, dimBlock>>>(param, bcs.condition_left);
-	boundary_kernel<<<dimGrid, dimBlock>>>(param, bcs.condition_right);
-	boundary_kernel<<<dimGrid, dimBlock>>>(param, bcs.condition_up);
-	boundary_kernel<<<dimGrid, dimBlock>>>(param, bcs.condition_down);
+	boundary_kernel<<<dimGrid, dimBlock>>>(param, bcs);
 }
 
 #endif
