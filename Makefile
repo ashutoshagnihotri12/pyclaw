@@ -54,7 +54,7 @@ GENCODE_FLAGS   := $(GENCODE_SM10) $(GENCODE_SM20) $(GENCODE_SM30)
 
 # OS-specific build flags
 ifneq ($(DARWIN),) 
-      LDFLAGS   := -Xlinker -rpath $(CUDA_LIB_PATH) -L$(CUDA_LIB_PATH) -lcudart -framework GLUT -framework OpenGL -framework Cocoa
+      LDFLAGS   := -Xlinker -rpath $(CUDA_LIB_PATH) -L$(CUDA_LIB_PATH) -lcudart -framework GLUT -framework OpenGL -framework Cocoa -L/usr/local/Cellar/glew/1.9.0/lib -lGLEW
       CCFLAGS   := -arch $(OS_ARCH) -Wfatal-errors -framework GLUT -framework OpenGL -framework Cocoa
 else
   ifeq ($(OS_SIZE),32)
