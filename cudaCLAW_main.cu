@@ -13,11 +13,11 @@ Vis* GlutInterface<Vis>::visualizer = NULL;
 
 // This object holds the solver and limiter, and must be generated
 typedef Visualizer2D<acoustics_horizontal, acoustics_vertical, limiter_MC, 
-	boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective>> acoustics_vis;
-	//boundaryConditions<BC_left_absorbing, BC_right_absorbing, BC_up_absorbing, BC_down_absorbing>> acoustics_vis;
+	boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective> > acoustics_vis;
+	//boundaryConditions<BC_left_absorbing, BC_right_absorbing, BC_up_absorbing, BC_down_absorbing> > acoustics_vis;
 
 typedef Visualizer2D<shallow_water_horizontal, shallow_water_vertical, limiter_MC, 
-	boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective>> shallowWater_vis;
+	boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective> > shallowWater_vis;
 
 int main(int argc, char** argv)
 {
