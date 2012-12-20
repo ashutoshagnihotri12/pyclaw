@@ -80,6 +80,17 @@ inline void Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::initializeDisplay(
 	// Initialize gl elements
 	InitGl();
 
+	// Initialize glew
+
+	GLenum err = glewInit();
+	if (GLEW_OK != err)
+	{
+	  /* Problem: glewInit failed, something is seriously wrong. */
+	  fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+	  exit(1);
+	}
+	fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
+
 	// Set Canvas ratio
 	canvas_ratio = (float)(param->cellsX) / (float)(param->cellsY);
 	centerX = 0.0f;

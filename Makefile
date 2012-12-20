@@ -99,8 +99,8 @@ build: cudaclaw
 
 cudaclaw: Riemann_Flux.o glInfo.o probleml_setup.o Timer.o boundary_conditions.o cudaCLAW_main.o Visualizer2D.o
 	$(GCC) $(CCFLAGS) -o $@ $+ $(LDFLAGS) $(EXTRA_LDFLAGS)
-	mkdir -p ../../bin/$(OSLOWER)/$(TARGET)
-	cp $@ ../../bin/$(OSLOWER)/$(TARGET)
+	mkdir -p ./bin/$(OSLOWER)/$(TARGET)
+	cp $@ ./bin/$(OSLOWER)/$(TARGET)
 
 run: build
 	./cudaclaw
