@@ -11,11 +11,12 @@
 #include "glInfo.h"
 #include <cuda_gl_interop.h>
 
-#include <GL/gl.h>
-
 #ifdef __APPLE__		// if Apple, macintosh
-#include <GLUT/glut>
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#include <glut.h>
 #else
+#include <GL/gl.h>
 #include <gl/glut.h>	// else if windows, or linux
 #endif
 
