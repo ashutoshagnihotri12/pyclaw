@@ -443,7 +443,7 @@ inline void Visualizer2D<Riemann_h, Riemann_v,  Limiter, BCS>::checkGPUCompatibi
 		cout << "Video card supports GL_ARB_texture_non_power_of_two." << endl;
 	}
 #else // for linux, do not need to get function pointers, it is up-to-date
-	if(glInfo->isExtensionSupported("GL_ARB_pixel_buffer_object"))
+	if(glInfo.isExtensionSupported("GL_ARB_pixel_buffer_object"))
 	{
 		supportPBO = true;
 		cout << "Video card supports GL_ARB_pixel_buffer_object." << endl;
@@ -453,7 +453,7 @@ inline void Visualizer2D<Riemann_h, Riemann_v,  Limiter, BCS>::checkGPUCompatibi
 		supportPBO = false;
 		cout << "Video card does NOT support GL_ARB_pixel_buffer_object." << endl;
 	}
-	if (glInfo->isExtensionSupported("GL_ARB_texture_non_power_of_two"))
+	if (glInfo.isExtensionSupported("GL_ARB_texture_non_power_of_two"))
 	{
 		supportNPOT = true;
 		cout << "Video card supports GL_ARB_texture_non_power_of_two." << endl;
