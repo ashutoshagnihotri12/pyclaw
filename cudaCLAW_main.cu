@@ -107,7 +107,8 @@ void setupCUDA()
 	}
 }
 template <class T>
-inline void getCudaAttribute(T *attribute, CUdevice_attribute device_attribute)
+inline void getCudaAttribute(T *attribute, CUdevice_attribute device_attribute,
+							 int device)
 {
 	// Credit to Nvidia GPU computing SDK, deviceQuery project.
 	CUresult error = cuDeviceGetAttribute(attribute, device_attribute, device);
