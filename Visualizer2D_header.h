@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include "common.h"
+
 #include "glInfo.h"
 #include <cuda_gl_interop.h>
 
