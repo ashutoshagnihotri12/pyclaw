@@ -23,8 +23,6 @@ struct BC_left_absorbing
 {
 	__device__ void operator()(pdeParam param, int row)
 	{
-		//int row = threadIdx.x + blockDim.x*blockIdx.x;
-
 		int range = param.cellsY;
 		int boundary_start = 0;
 		int boundary_end = param.ghostCells;
@@ -39,8 +37,6 @@ struct BC_right_absorbing
 {
 	__device__ void operator()(pdeParam param, int row)
 	{
-		//int row = threadIdx.x + blockDim.x*blockIdx.x;
-
 		int range = param.cellsY;
 		int boundary_start = param.cellsX - param.ghostCells;
 		int boundary_end = param.cellsX;
@@ -55,8 +51,6 @@ struct BC_down_absorbing
 {
 	__device__ void operator()(pdeParam param, int col)
 	{
-		//int col = threadIdx.x + blockDim.x*blockIdx.x;
-
 		int range = param.cellsX;
 		int boundary_start = param.cellsY - param.ghostCells;
 		int boundary_end = param.cellsY;
@@ -71,8 +65,6 @@ struct BC_up_absorbing
 {
 	__device__ void operator()(pdeParam param, int col)
 	{
-		//int col = threadIdx.x + blockDim.x*blockIdx.x;
-
 		int range = param.cellsX;
 		int boundary_start = 0;
 		int boundary_end = param.ghostCells;
@@ -90,8 +82,6 @@ struct BC_left_reflective
 {
 	__device__ void operator()(pdeParam param, int row)
 	{
-		//int row = threadIdx.x + blockDim.x*blockIdx.x;
-
 		int range = param.cellsY;
 		int boundary_start = 0;
 		int boundary_end = param.ghostCells;
@@ -102,9 +92,6 @@ struct BC_left_reflective
 			{
 				param.setElement_qNew(row, col, 0, param.getElement_qNew(row, boundary_end + boundary_length - 1 - col, 0));
 				for ( int k = 1; k < param.numStates; k++)					// could be modified to be handled by threads in the z directions
-					//if (k == 0)
-					//	param.setElement_qNew(row, col, k, param.getElement_qNew(row, boundary_end + boundary_length - 1 - col, k));
-					//else
 						param.setElement_qNew(row, col, k,-param.getElement_qNew(row, boundary_end + boundary_length - 1 - col, k));
 			}
 	}
@@ -113,8 +100,6 @@ struct BC_right_reflective
 {
 	__device__ void operator()(pdeParam param, int row)
 	{
-		//int row = threadIdx.x + blockDim.x*blockIdx.x;
-
 		int range = param.cellsY;
 		int boundary_start = param.cellsX - param.ghostCells;
 		int boundary_end = param.cellsX;
@@ -124,19 +109,14 @@ struct BC_right_reflective
 			{
 				param.setElement_qNew(row, col, 0, param.getElement_qNew(row, boundary_start -(col - boundary_start), 0));
 				for ( int k = 1; k < param.numStates; k++)					// could be modified to be handled by threads in the z directions
-					//if ( k == 0)
-					//	param.setElement_qNew(row, col, k, param.getElement_qNew(row, boundary_start -(col - boundary_start), k));
-					//else
 						param.setElement_qNew(row, col, k,-param.getElement_qNew(row, boundary_start -(col - boundary_start), k));
 			}
 	}
 };
-struct BC_up_reflective
+struct BC_down_reflective
 {
 	__device__ void operator()(pdeParam param, int col)
 	{
-		//int col = threadIdx.x + blockDim.x*blockIdx.x;
-
 		int range = param.cellsX;
 		int boundary_start = param.cellsY - param.ghostCells;
 		int boundary_end = param.cellsY;
@@ -148,19 +128,14 @@ struct BC_up_reflective
 			{
 				param.setElement_qNew(row, col, 0, param.getElement_qNew(boundary_start - reverse_counter, col, 0));
 				for (int k = 1; k < param.numStates; k++)										// could be modified to be handled by threads in the z directions
-					//if (k == 0)
-					//	param.setElement_qNew(row, col, k, param.getElement_qNew(boundary_start - reverse_counter, col, k));
-					//else
 						param.setElement_qNew(row, col, k,-param.getElement_qNew(boundary_start - reverse_counter, col, k));
 			}
 	}
 };
-struct BC_down_reflective
+struct BC_up_reflective
 {
 	__device__ void operator()(pdeParam param, int col)
 	{
-		//int col = threadIdx.x + blockDim.x*blockIdx.x;
-
 		int range = param.cellsX;
 		int boundary_start = 0;
 		int boundary_end = param.ghostCells;
@@ -171,9 +146,6 @@ struct BC_down_reflective
 			{
 				param.setElement_qNew(row, col, 0, param.getElement_qNew(boundary_end + reverse_counter, col, 0));
 				for ( int k = 1; k < param.numStates; k++)										// could be modified to be handled by threads in the z directions
-					//if (k == 0)
-					//	param.setElement_qNew(row, col, k, param.getElement_qNew(boundary_end + reverse_counter, col, k));
-					//else
 						param.setElement_qNew(row, col, k,-param.getElement_qNew(boundary_end + reverse_counter, col, k));
 			}
 	}

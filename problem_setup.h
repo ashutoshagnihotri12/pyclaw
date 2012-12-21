@@ -14,7 +14,10 @@ void mid_Gaussian_q(pdeParam &);
 void circle_q(pdeParam &param);
 void centered_circle_q(pdeParam &param);
 void off_circle_q(pdeParam &param);
-void radial_plateau(pdeParam &param);
+
+void radial_plateau(pdeParam &);
+void separating_streams(pdeParam &);
+void dam_break(pdeParam &param);
 
 // Coefficient value functions
 void uniform_coefficients(pdeParam &, real* u);

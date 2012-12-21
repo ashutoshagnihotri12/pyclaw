@@ -9,19 +9,19 @@ void radial_plateau(pdeParam &param)	// For Shallow Water equations specifically
 	real* cpu_q = (real*)malloc(size);
 
 	real plateau_radius = 0.2;
-	real center_r = param.cellsX/2;
-	real center_c = param.cellsY/2;
 	real x;
 	real y;
 
 	for (int row = 0; row < param.cellsY; row++)
+	{
+		y = (param.height*row)/(real)param.cellsY + param.startY;
 		for (int col = 0; col < param.cellsX; col++)
+		{
+			x = (param.width*col)/(real)param.cellsX + param.startX;
 			for (int state = 0; state < param.numStates; state++)
 			{
 				if (state == 0)
 				{
-					x = param.width*(row-center_r)/(real)param.cellsY;
-					y = param.height*(col-center_c)/(real)param.cellsX;
 					if ( x*x + y*y < plateau_radius*plateau_radius)
 						param.setElement_q_cpu(cpu_q, row, col, state, 0.8f);
 					else
@@ -29,9 +29,82 @@ void radial_plateau(pdeParam &param)	// For Shallow Water equations specifically
 				}
 				else
 				{
-					param.setElement_q_cpu(cpu_q, row, col, state, 0.0 );
+					param.setElement_q_cpu(cpu_q, row, col, state, 0.0f);
 				}
 			}
+		}
+	}
+
+	cudaError_t memCpyCheck = cudaMemcpy(param.qNew, cpu_q, size, cudaMemcpyHostToDevice);
+	free(cpu_q);
+}
+
+void separating_streams(pdeParam &param)	// For Shallow Water equations specifically
+{
+	size_t size = param.cellsX*param.cellsY*param.numStates*sizeof(real);
+	real* cpu_q = (real*)malloc(size);
+
+	real x;
+	real y;
+
+	for (int row = 0; row < param.cellsY; row++)
+	{
+		y = (param.height*row)/(real)param.cellsY + param.startY;
+		for (int col = 0; col < param.cellsX; col++)
+		{
+			x = (param.width*col)/(real)param.cellsX + param.startX;
+			param.setElement_q_cpu(cpu_q, row, col, 0, 0.6f);
+			for (int state = 1; state < param.numStates; state++)
+			{
+				if (state == 1)
+				{
+					if ( x < (param.startX + param.endX)/2.0f )
+						param.setElement_q_cpu(cpu_q, row, col, state, -0.2f);
+					else
+						param.setElement_q_cpu(cpu_q, row, col, state, 0.2f);
+				}
+				else
+				{
+					param.setElement_q_cpu(cpu_q, row, col, state, 0.0f );
+				}
+			}
+		}
+	}
+
+	cudaError_t memCpyCheck = cudaMemcpy(param.qNew, cpu_q, size, cudaMemcpyHostToDevice);
+	free(cpu_q);
+}
+
+void dam_break(pdeParam &param)	// For Shallow Water equations specifically
+{
+	size_t size = param.cellsX*param.cellsY*param.numStates*sizeof(real);
+	real* cpu_q = (real*)malloc(size);
+
+	real x;
+	real y;
+
+	for (int row = 0; row < param.cellsY; row++)
+	{
+		y = (param.height*row)/(real)param.cellsY + param.startY;
+		for (int col = 0; col < param.cellsX; col++)
+		{
+			x = (param.width*col)/(real)param.cellsX + param.startX;
+			for (int state = 0; state < param.numStates; state++)
+			{
+				if (state == 0)
+				{
+					if ( x < (param.startX+param.endX)/2.0f )
+						param.setElement_q_cpu(cpu_q, row, col, state, 0.7f);
+					else
+						param.setElement_q_cpu(cpu_q, row, col, state, 0.4f);
+				}
+				else
+				{
+					param.setElement_q_cpu(cpu_q, row, col, state, 0.0f );
+				}
+			}
+		}
+	}
 
 	cudaError_t memCpyCheck = cudaMemcpy(param.qNew, cpu_q, size, cudaMemcpyHostToDevice);
 	free(cpu_q);
@@ -42,19 +115,19 @@ void mid_Gaussian_q(pdeParam &param)
 	size_t size = param.cellsX*param.cellsY*param.numStates*sizeof(real);
 	real* cpu_q = (real*)malloc(size);
 
-	real center_r = param.cellsX/2;
-	real center_c = param.cellsY/2;
 	real x;
 	real y;
 
 	for (int row = 0; row < param.cellsY; row++)
+	{
+		y = (param.height*row)/(real)param.cellsY + param.startY;
 		for (int col = 0; col < param.cellsX; col++)
+		{
+			x = (param.width*col)/(real)param.cellsX + param.startX;
 			for (int state = 0; state < param.numStates; state++)
 			{
 				if (state == 0)
 				{
-					x = param.width*(row-center_r)/(real)param.cellsY;
-					y = param.height*(col-center_c)/(real)param.cellsX;
 					param.setElement_q_cpu(cpu_q, row, col, state, exp( -((x*x)+(y*y))/0.1 )  );
 				}
 				else
@@ -62,6 +135,8 @@ void mid_Gaussian_q(pdeParam &param)
 					param.setElement_q_cpu(cpu_q, row, col, state, 0.0 );
 				}
 			}
+		}
+	}
 
 	cudaError_t memCpyCheck = cudaMemcpy(param.qNew, cpu_q, size, cudaMemcpyHostToDevice);
 	free(cpu_q);
@@ -75,20 +150,20 @@ void circle_q(pdeParam &param)
 	real pi = 3.14159;
 	real w = 0.2;	// multiplier that determines the span/largeness of the bell curve
 
-	real center_r = param.cellsX/2;
-	real center_c = param.cellsY/2;
 	real x;
 	real y;
 	real r;
 
 	for (int row = 0; row < param.cellsY; row++)
+	{
+		y = (param.height*row)/(real)param.cellsY + param.startY;
 		for (int col = 0; col < param.cellsX; col++)
+		{
+			x = (param.width*col)/(real)param.cellsX + param.startX;
 			for (int state = 0; state < param.numStates; state++)
 			{
 				if (state == 0)
 				{
-					x = param.width*(row-center_r)/(real)param.cellsY;
-					y = param.height*(col-center_c)/(real)param.cellsX;
 					r = sqrt(x*x + y*y);
 					if ( abs(r-0.25) <= w )
 						param.setElement_q_cpu(cpu_q, row, col, state, (1 + cos( pi*(r-0.25)/w))/4.0f);//exp( -((r-0.25)*(r-0.25))/0.02 )  );
@@ -100,6 +175,8 @@ void circle_q(pdeParam &param)
 					param.setElement_q_cpu(cpu_q, row, col, state, 0.0);
 				}
 			}
+		}
+	}
 
 	cudaError_t memCpyCheck = cudaMemcpy(param.qNew, cpu_q, size, cudaMemcpyHostToDevice);
 	free(cpu_q);
