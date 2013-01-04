@@ -43,16 +43,37 @@ int main(int argc, char** argv)
 
 	real ratio = (real)CELLSY/(real)CELLSX;
 
-	pdeParam problemParam = setupShallowWater(-1, 1, -1, ratio, radial_plateau);
+	real simulation_start_time = 0.0f;
+	real simulation_end_time = 1.0f;
+
+	pdeParam problemParam = setupShallowWater(-1, 1, -1, ratio, simulation_start_time, simulation_end_time, radial_plateau);
 
 	//pdeParam problemParam = setupAcoustics(0,1,0,ratio, /*off_circle_q/*/centered_circle_q/**/, uniform_coefficients);
 
+	problemParam.setSnapshotRate(0.1f);
 	real simulationTime = 0.0f;
-	real simulation_endTime = 5.0f;
-	while (simulationTime < simulation_endTime)
+	real simulationStepTime = 0.0f;
+	real simulationTimeInterval = 0.0f;
+
+	// This single step seems necessary for the data to show
+	step<shallow_water_horizontal, shallow_water_vertical, limiter_MC, boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective>>(problemParam, shallow_water_h, shallow_water_v, phi, reflective_conditions);
+	problemParam.takeSnapshot(0, "pde data");	// take initial state snapshot
+
+	int step_number = 1;
+	
+	while (simulationTime < problemParam.endTime)
 	{
-		simulationTime += step<shallow_water_horizontal, shallow_water_vertical, limiter_MC, boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective>>(problemParam, shallow_water_h, shallow_water_v, phi, reflective_conditions);
+		simulationStepTime = step<shallow_water_horizontal, shallow_water_vertical, limiter_MC, boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective>>(problemParam, shallow_water_h, shallow_water_v, phi, reflective_conditions);
 		printf("Simulation Time is: %fs\n", simulationTime);
+
+		simulationTime += simulationStepTime;
+		simulationTimeInterval += simulationStepTime;
+		if (simulationTimeInterval > problemParam.snapshotTimeInterval)
+		{
+			problemParam.takeSnapshot(step_number, "pde data");
+			simulationTimeInterval = 0.0f;
+			step_number++;
+		}
 	}
 	gracefulExit();
 }

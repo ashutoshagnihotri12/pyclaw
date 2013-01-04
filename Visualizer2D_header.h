@@ -92,6 +92,8 @@ public:
 	bool step_once;			// allows to step a single step of computation
 	bool stopDisplay;		// toggles the data copy to display operation
 	bool colorScheme;		// rotates between grayscale and color scheme
+	GLfloat floor;			// adjust the range of values to be between floor and ceil 
+	GLfloat ceil;			// to avoid cutting off values outside this range
 	GLfloat intensity;
 
 	// display capabilities
@@ -155,5 +157,5 @@ extern "C" void copyDisplayData(GLfloat* PBO, int dispResolutionX, int dispResol
 
 extern "C" void copyDisplayData_Flat(GLfloat* PBO, int dispResolutionX, int dispResolutionY,
 								real* q, int cellsX, int cellsY, int numStates, int ghostCells,
-								int state_display, bool boundary_display, bool colorScheme, GLfloat intensity);
+								int state_display, bool boundary_display, bool colorScheme, GLfloat intensity, GLfloat floor, GLfloat ceil);
 #endif

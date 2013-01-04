@@ -1,6 +1,8 @@
 #ifndef __PARAMS_H__
 #define __PARAMS_H__
 
+#include <string>
+
 typedef float real;
 
 struct pdeParam
@@ -25,6 +27,12 @@ struct pdeParam
 	const real startY;		// physical domain's starting y in cartesian coordinates
 	const real endY;		// physical domain's ending y in cartesian coordinates
 
+	const real startTime;	// simulation start time
+	const real endTime;		// simulation end time
+
+	bool snapshots;				// flag to allow or disallow solution snapshots
+	real snapshotTimeInterval;	// time interval between snapshots
+
 	real* coefficients;			// physical medium coefficients					//	GPU residents
 	real* q;					// data, cells' states							//
 	real* qNew;					// intermediate update holder
@@ -32,13 +40,16 @@ struct pdeParam
 	real* waveSpeedsY;			// speed of vertical waves						//
 
 	pdeParam()
-		: cellsX(256), cellsY(256), ghostCells(2), numStates(1), numWaves(1), numCoeff(1), startX(0), endX(1), startY(0), endY(1)
+		: cellsX(256), cellsY(256), ghostCells(2), numStates(1), numWaves(1), numCoeff(1), startX(0), endX(1), startY(0), endY(1), startTime(0.0f), endTime(0.0f)
 	{
 		width = endX-startX;
 		height = endY-startY;
 		dx = width/cellsX;
 		dy = height/cellsY;
+
 		entropy_fix = false;
+
+		snapshots = false;
 
 		int cells = cellsX*cellsY;
 		int horizontal_blocks = ((CELLSX-1 + HORIZONTAL_BLOCKSIZEX-3-1)/(HORIZONTAL_BLOCKSIZEX-3)) * ((CELLSY + HORIZONTAL_BLOCKSIZEY-1)/(HORIZONTAL_BLOCKSIZEY));
@@ -58,15 +69,19 @@ struct pdeParam
 		free(zerosY);
 	};
 	pdeParam(int cellsX, int cellsY, int ghostCells, int numStates, int numWaves, int numCoeff,
-		real startX, real endX, real startY, real endY)
+		real startX, real endX, real startY, real endY, real startTime, real endTime)
 		:
 	cellsX(cellsX), cellsY(cellsY), ghostCells(ghostCells), numStates(numStates), numWaves(numWaves), numCoeff(numCoeff),
-		startX(startX), endX(endX), startY(startY), endY(endY)
+		startX(startX), endX(endX), startY(startY), endY(endY), startTime(startTime), endTime(endTime)
 	{
 		width = endX-startX;
 		height = endY-startY;
 		dx = width/cellsX;
 		dy = height/cellsY;
+
+		entropy_fix = false;
+
+		snapshots = false;
 
 		int cells = cellsX*cellsY;
 		int horizontal_blocks = ((CELLSX-1 + HORIZONTAL_BLOCKSIZEX-3-1)/(HORIZONTAL_BLOCKSIZEX-3)) * ((CELLSY + HORIZONTAL_BLOCKSIZEY-1)/(HORIZONTAL_BLOCKSIZEY));
@@ -101,6 +116,58 @@ struct pdeParam
 		cudaFree(q);
 		cudaFree(qNew);
 		cudaFree(coefficients);
+	};
+
+	void setSnapshotRate(real interval)
+	{
+		snapshots = true;
+		snapshotTimeInterval = interval;
+	};
+
+	// Taking a solution snapshot saves the solution onto disk
+	// there is a matlab script file that reads and displays the snapshot
+	void takeSnapshot(int iteration, char* fileName="pde data")
+	{
+		// copy data from GPU to CPU
+		// create CPU buffers then copy
+		int cells = cellsX*cellsY;
+		real* cpu_q			   = (real*)malloc(cells*numStates*sizeof(real));
+		real* cpu_coefficients = (real*)malloc(cells*numCoeff*sizeof(real));
+
+		cudaError_t cpy_err1 = cudaMemcpy(cpu_q, q, cells*numStates*sizeof(real), cudaMemcpyDeviceToHost);
+		cudaError_t cpy_err2 = cudaMemcpy(cpu_coefficients, coefficients, cells*numCoeff*sizeof(real), cudaMemcpyDeviceToHost);
+
+		// copy data from CPU to disk
+		real xRange = endX-startX;
+		real yRange = endY-startY;
+
+		int size = cellsX*cellsY;
+
+		float* chunk = (float*)malloc(cellsY*sizeof(float));
+		
+		FILE* pdeData;
+		char filename[256];
+		sprintf(filename, "%s%i.dat", fileName, iteration);
+
+		pdeData = fopen(filename, "wb");
+
+		fprintf(pdeData, "%i,%i,%f,%f,%f,%f,%i.\n", cellsX, cellsY, startX, endX, startY, endY, numStates);
+
+		for (int state = 0; state < numStates; state++)
+		{
+			for (int row = 0; row < cellsX; row++)
+			{
+				memcpy(chunk, &cpu_q[state*size + row*cellsY], cellsY*sizeof(float));
+				for(int col = 0; col < cellsY; col++)
+				{
+					fprintf(pdeData, "%f ", chunk[col]);
+				}
+				fprintf(pdeData, "\n");
+			}
+			fprintf(pdeData, "\n");
+		}
+		fclose(pdeData);
+		free(chunk);
 	};
 
 	// GETTER AND SETTER FUNCTIONS
