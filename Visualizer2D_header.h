@@ -21,33 +21,6 @@
 #include <gl/glut.h>	// else if windows, or linux
 #endif
 
-#ifndef __GLUTINTERFACE_H__
-#ifndef WINDOWS_GL_EXTENSIONS
-#define WINDOWS_GL_EXTENSIONS
-// function pointers for PBO Extension
-// Windows needs to get function pointers from ICD OpenGL drivers,
-// because opengl32.dll does not support extensions higher than v1.1.
-#if defined (_WIN32) || defined (_WIN64)
-PFNGLGENBUFFERSARBPROC pglGenBuffersARB = 0;                     // PBO Name Generation Procedure
-PFNGLBINDBUFFERARBPROC pglBindBufferARB = 0;                     // PBO Bind Procedure
-PFNGLBUFFERDATAARBPROC pglBufferDataARB = 0;                     // PBO Data Loading Procedure
-PFNGLBUFFERSUBDATAARBPROC pglBufferSubDataARB = 0;               // PBO Sub Data Loading Procedure
-PFNGLDELETEBUFFERSARBPROC pglDeleteBuffersARB = 0;               // PBO Deletion Procedure
-PFNGLGETBUFFERPARAMETERIVARBPROC pglGetBufferParameterivARB = 0; // return various parameters of PBO
-PFNGLMAPBUFFERARBPROC pglMapBufferARB = 0;                       // map PBO procedure
-PFNGLUNMAPBUFFERARBPROC pglUnmapBufferARB = 0;                   // unmap PBO procedure
-#define glGenBuffersARB           pglGenBuffersARB
-#define glBindBufferARB           pglBindBufferARB
-#define glBufferDataARB           pglBufferDataARB
-#define glBufferSubDataARB        pglBufferSubDataARB
-#define glDeleteBuffersARB        pglDeleteBuffersARB
-#define glGetBufferParameterivARB pglGetBufferParameterivARB
-#define glMapBufferARB            pglMapBufferARB
-#define glUnmapBufferARB          pglUnmapBufferARB
-#endif
-#endif
-#endif
-
 //TODO: Add interactivity, or not
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////   Visualizer 2D Class  ////////////////////////////////////////////////////////////

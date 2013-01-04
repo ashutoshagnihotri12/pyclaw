@@ -81,7 +81,6 @@ inline void Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::initializeDisplay(
 	InitGl();
 
 	// Initialize glew
-
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
 	{

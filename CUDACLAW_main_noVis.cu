@@ -1,4 +1,4 @@
-#include "cudaClaw_main.h"
+#include "cudaClaw_main_noVis.h"
 
 #include <iostream>
 
