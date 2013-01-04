@@ -23,7 +23,6 @@
 #include <string>
 #include <set>
 #include <gl/glew.h>
-#include "glext.h"
 
 using namespace std;
 
