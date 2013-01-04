@@ -59,7 +59,10 @@ int main(int argc, char** argv)
 
 	real ratio = (real)CELLSY/(real)CELLSX;
 
-	pdeParam problemParam = setupShallowWater(-1, 1, -1, ratio, radial_plateau);
+	real simulation_start = 0.0f;
+	real simulation_end = 1.0f;
+
+	pdeParam problemParam = setupShallowWater(-1, 1, -1, ratio, simulation_start, simulation_end, radial_plateau);
 
 	GlutInterface<shallowWater_vis>::visualizer->setParam(problemParam);
 	GlutInterface<shallowWater_vis>::visualizer->setBoundaryConditions(reflective_conditions);

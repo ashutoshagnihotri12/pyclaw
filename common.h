@@ -15,8 +15,8 @@
 #define VERTICAL_BLOCKSIZEX 32	//16 //32
 #define VERTICAL_BLOCKSIZEY 12	//24 //12
 
-#define CELLSX 1024
-#define CELLSY 1024
+#define CELLSX 256
+#define CELLSY 256
 
 // Effects things in the visualizer class only
 // determines the maximum resolution per side of the texture
