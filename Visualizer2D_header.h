@@ -21,33 +21,6 @@
 #include <gl/glut.h>	// else if windows, or linux
 #endif
 
-#ifndef __GLUTINTERFACE_H__
-#ifndef WINDOWS_GL_EXTENSIONS
-#define WINDOWS_GL_EXTENSIONS
-// function pointers for PBO Extension
-// Windows needs to get function pointers from ICD OpenGL drivers,
-// because opengl32.dll does not support extensions higher than v1.1.
-#if defined (_WIN32) || defined (_WIN64)
-PFNGLGENBUFFERSARBPROC pglGenBuffersARB = 0;                     // PBO Name Generation Procedure
-PFNGLBINDBUFFERARBPROC pglBindBufferARB = 0;                     // PBO Bind Procedure
-PFNGLBUFFERDATAARBPROC pglBufferDataARB = 0;                     // PBO Data Loading Procedure
-PFNGLBUFFERSUBDATAARBPROC pglBufferSubDataARB = 0;               // PBO Sub Data Loading Procedure
-PFNGLDELETEBUFFERSARBPROC pglDeleteBuffersARB = 0;               // PBO Deletion Procedure
-PFNGLGETBUFFERPARAMETERIVARBPROC pglGetBufferParameterivARB = 0; // return various parameters of PBO
-PFNGLMAPBUFFERARBPROC pglMapBufferARB = 0;                       // map PBO procedure
-PFNGLUNMAPBUFFERARBPROC pglUnmapBufferARB = 0;                   // unmap PBO procedure
-#define glGenBuffersARB           pglGenBuffersARB
-#define glBindBufferARB           pglBindBufferARB
-#define glBufferDataARB           pglBufferDataARB
-#define glBufferSubDataARB        pglBufferSubDataARB
-#define glDeleteBuffersARB        pglDeleteBuffersARB
-#define glGetBufferParameterivARB pglGetBufferParameterivARB
-#define glMapBufferARB            pglMapBufferARB
-#define glUnmapBufferARB          pglUnmapBufferARB
-#endif
-#endif
-#endif
-
 //TODO: Add interactivity, or not
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////   Visualizer 2D Class  ////////////////////////////////////////////////////////////
@@ -92,6 +65,8 @@ public:
 	bool step_once;			// allows to step a single step of computation
 	bool stopDisplay;		// toggles the data copy to display operation
 	bool colorScheme;		// rotates between grayscale and color scheme
+	GLfloat floor;			// adjust the range of values to be between floor and ceil 
+	GLfloat ceil;			// to avoid cutting off values outside this range
 	GLfloat intensity;
 
 	// display capabilities
@@ -155,5 +130,5 @@ extern "C" void copyDisplayData(GLfloat* PBO, int dispResolutionX, int dispResol
 
 extern "C" void copyDisplayData_Flat(GLfloat* PBO, int dispResolutionX, int dispResolutionY,
 								real* q, int cellsX, int cellsY, int numStates, int ghostCells,
-								int state_display, bool boundary_display, bool colorScheme, GLfloat intensity);
+								int state_display, bool boundary_display, bool colorScheme, GLfloat intensity, GLfloat floor, GLfloat ceil);
 #endif

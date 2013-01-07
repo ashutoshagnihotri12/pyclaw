@@ -53,9 +53,10 @@
     </CudaCompile>
     <CudaCompile Include="cudaCLAW_main.cu">
       <FileType>CppCode</FileType>
+    </CudaCompile>
+    <CudaCompile Include="CUDACLAW_main_noVis.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </CudaCompile>
-    <CudaCompile Include="CUDACLAW_main_noVis.cu" />
     <CudaCompile Include="Visualizer2D.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </CudaCompile>

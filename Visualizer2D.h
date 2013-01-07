@@ -20,6 +20,8 @@ Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::Visualizer2D()
 	stopDisplay = false;
 	colorScheme = true;
 	intensity = 1.0f;
+	floor = 0.0f;
+	ceil = 1.0f;
 	//makeImpulse = false;
 
 	PBO_DISP_CUDA_resource = NULL;
@@ -41,6 +43,8 @@ Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::Visualizer2D(int window_width,
 	stopDisplay = false;
 	colorScheme = true;
 	intensity = 1.0f;
+	floor = 0.0f;
+	ceil = 1.0f;
 	//makeImpulse = false;
 
 	PBO_DISP_CUDA_resource = NULL;
@@ -81,7 +85,6 @@ inline void Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::initializeDisplay(
 	InitGl();
 
 	// Initialize glew
-
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
 	{
@@ -377,6 +380,21 @@ inline void Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::normalKeyPress(uns
 			hold = true;
 		break;
 
+	case '[':
+		floor -= 0.2f; break;
+	case '}':
+		floor += 0.2f; break;
+
+	case ']':
+		ceil += 0.2f; break;
+	case '{':
+		ceil -= 0.2f; break;
+
+	case '\\':
+		floor = 0.0f;
+		ceil  = 1.0f;
+		break;
+
 	case '+':
 		intensity += 0.02f;
 		break;
@@ -506,7 +524,7 @@ inline void Visualizer2D<Riemann_h, Riemann_v, Limiter, BCS>::visualizePDE()
 		// This function can be modified to put the read data into a format that can be used for colored mapping
 		copyDisplayData_Flat(PBO_DISP_data_d, dispResolutionX, dispResolutionY,
 						param->qNew, param->cellsX, param->cellsY, param->numStates, param->ghostCells,
-						state_display, boundary_display, colorScheme, intensity);/**/
+						state_display, boundary_display, colorScheme, intensity, floor, ceil);/**/
 
 		// The below would be useable if double texture is supported, and boundaries are to be included:		// turns out not really, when padding is on
 		// Not just padding, different sizes of resolution and data size...
@@ -737,7 +755,7 @@ float setRangePerFrame(Float * data_gpu, int width, int paddedWidth, int height,
 
 __global__ void copyDisplay_Flat_Kernel(GLfloat* PBO, int dispResolutionX, int dispResolutionY,
 									real* q, int cellsX, int cellsY, int numStates, int ghostCells,
-									int state_display, bool boundary_display, bool colorScheme, GLfloat intensity)
+									int state_display, bool boundary_display, bool colorScheme, GLfloat intensity, GLfloat floor, GLfloat ceil)
 {
 	int col = blockIdx.x*blockDim.x + threadIdx.x;
 	int row = blockIdx.y*blockDim.y + threadIdx.y;
@@ -757,7 +775,8 @@ __global__ void copyDisplay_Flat_Kernel(GLfloat* PBO, int dispResolutionX, int d
 					cells++;
 				}
 		}
-		float average = sum/cells;
+		GLfloat range = ceil-floor;
+		GLfloat average = ((sum/cells)-floor)/range;
 		
 		if (colorScheme)
 		{
@@ -788,7 +807,7 @@ __global__ void copyDisplay_Flat_Kernel(GLfloat* PBO, int dispResolutionX, int d
 
 extern "C" void copyDisplayData_Flat(GLfloat* PBO, int dispResolutionX, int dispResolutionY,
 								real* q, int cellsX, int cellsY, int numStates, int ghostCells,
-								int state_display, bool boundary_display, bool colorScheme, GLfloat intensity)
+								int state_display, bool boundary_display, bool colorScheme, GLfloat intensity, GLfloat floor, GLfloat ceil)
 {
 	// this function would be more interesting when GPU does not support non power of two textures //?
 
@@ -806,7 +825,7 @@ extern "C" void copyDisplayData_Flat(GLfloat* PBO, int dispResolutionX, int disp
 
 	copyDisplay_Flat_Kernel<<<dimGrid, dimBlock>>>(PBO, dispResolutionX, dispResolutionY,
 												q, cellsX, cellsY, numStates, ghostCells,
-												state_display, boundary_display, colorScheme, intensity);
+												state_display, boundary_display, colorScheme, intensity, floor, ceil);
 }
 
 /*

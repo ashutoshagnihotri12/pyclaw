@@ -24,10 +24,10 @@ void uniform_coefficients(pdeParam &, real* u);
 void some_function_coefficients(pdeParam &);
 
 // Problem Setup
-pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, void(*init_q_function)(pdeParam &), void(*init_coeff_function)(pdeParam &, real* u));
-pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, void(*init_q_function)(pdeParam &), void(*init_coeff_function)(pdeParam &));
+pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, real time_start, real time_end, void(*init_q_function)(pdeParam &), void(*init_coeff_function)(pdeParam &, real* u));
+pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, real time_start, real time_end, void(*init_q_function)(pdeParam &), void(*init_coeff_function)(pdeParam &));
 
-pdeParam setupShallowWater(real x_start, real x_end, real y_start, real y_end, void(*init_q_function)(pdeParam &));
+pdeParam setupShallowWater(real x_start, real x_end, real y_start, real y_end, real time_start, real time_end, void(*init_q_function)(pdeParam &));
 
 void setUpProblem(int argc, char** argv);
 

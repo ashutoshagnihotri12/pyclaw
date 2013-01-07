@@ -292,7 +292,7 @@ void some_function_coefficients(pdeParam &param)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////  Problem Setting  /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, void (*init_q)(pdeParam &), void (*init_coeff)(pdeParam &,real*) )
+pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, real time_start, real time_end, void (*init_q)(pdeParam &), void (*init_coeff)(pdeParam &,real*) )
 {
 	pdeParam param(
 		CELLSX,		//cellsX
@@ -304,7 +304,10 @@ pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, void
 		x_start,	//startX
 		x_end,		//endX
 		y_start,	//startY
-		y_end);		//endY
+		y_end,		//endY
+		time_start,	//startTime
+		time_end	//endTime
+		);
 
 	real u[2] = {1.0, 4.0};
 	init_q(param);
@@ -313,7 +316,7 @@ pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, void
 	return param;
 }
 
-pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, void (*init_q)(pdeParam &), void (*init_coeff)(pdeParam &) )
+pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, real time_start, real time_end, void (*init_q)(pdeParam &), void (*init_coeff)(pdeParam &) )
 {
 	pdeParam param(
 		CELLSX,		//cellsX
@@ -325,7 +328,10 @@ pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, void
 		x_start,	//startX
 		x_end,		//endX
 		y_start,	//startY
-		y_end);		//endY
+		y_end,		//endY
+		time_start,	//startTime
+		time_end	//endTime
+		);
 
 	init_q(param);
 	init_coeff(param);
@@ -334,7 +340,7 @@ pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, void
 }
 
 
-pdeParam setupShallowWater(real x_start, real x_end, real y_start, real y_end, void(*init_q)(pdeParam &))
+pdeParam setupShallowWater(real x_start, real x_end, real y_start, real y_end, real time_start, real time_end, void(*init_q)(pdeParam &))
 {
 	pdeParam param(
 		CELLSX,		//cellsX
@@ -346,7 +352,10 @@ pdeParam setupShallowWater(real x_start, real x_end, real y_start, real y_end, v
 		x_start,	//startX
 		x_end,		//endX
 		y_start,	//startY
-		y_end);		//endY
+		y_end,		//endY
+		time_start,	//startTime
+		time_end	//endTime
+		);
 
 	init_q(param);
 

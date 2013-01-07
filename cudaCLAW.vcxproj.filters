@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="step.h">
-      <Filter>header</Filter>
-    </ClInclude>
     <ClInclude Include="params.h">
       <Filter>header</Filter>
     </ClInclude>
@@ -22,22 +19,13 @@
     <ClInclude Include="glInfo.h">
       <Filter>Visualizer\header</Filter>
     </ClInclude>
-    <ClInclude Include="Visualizer2D.h">
-      <Filter>Visualizer\header</Filter>
-    </ClInclude>
     <ClInclude Include="fused_Riemann_Limiter_headers.h">
-      <Filter>header</Filter>
-    </ClInclude>
-    <ClInclude Include="reduce_Max.h">
       <Filter>header</Filter>
     </ClInclude>
     <ClInclude Include="Visualizer2D_header.h">
       <Filter>Visualizer\header</Filter>
     </ClInclude>
     <ClInclude Include="boundary_conditions_header.h">
-      <Filter>header</Filter>
-    </ClInclude>
-    <ClInclude Include="boundary_conditions.h">
       <Filter>header</Filter>
     </ClInclude>
     <ClInclude Include="boundary_condtions.cuh">
@@ -52,10 +40,25 @@
     <ClInclude Include="Riemann_Flux.cpp">
       <Filter>source\excluded from build</Filter>
     </ClInclude>
-    <ClInclude Include="fused_Riemann_Limiter.h">
+    <ClInclude Include="problem_setup.h">
       <Filter>header</Filter>
     </ClInclude>
-    <ClInclude Include="problem_setup.h">
+    <ClInclude Include="step.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="reduce_Max.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="fused_Riemann_Limiter.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="boundary_conditions.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="Visualizer2D.h">
+      <Filter>Visualizer\source</Filter>
+    </ClInclude>
+    <ClInclude Include="cudaClaw_main_noVis.h">
       <Filter>header</Filter>
     </ClInclude>
   </ItemGroup>
@@ -115,14 +118,14 @@
     <ClCompile Include="glInfo.cpp">
       <Filter>Visualizer\source</Filter>
     </ClCompile>
-    <ClCompile Include="GlutInterface.h">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="Visualizer2D.tpp">
       <Filter>Visualizer\source\excluded from build</Filter>
     </ClCompile>
     <ClCompile Include="probleml_setup.cpp">
       <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="GlutInterface.h">
+      <Filter>header</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
