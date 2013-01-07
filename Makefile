@@ -97,7 +97,12 @@ build: cudaclaw
 %.o: %.cpp
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-cudaclaw: Riemann_Flux.o glInfo.o probleml_setup.o Timer.o boundary_conditions.o cudaCLAW_main.o Visualizer2D.o
+cudaclaw_glut: Riemann_Flux.o glInfo.o probleml_setup.o Timer.o boundary_conditions.o cudaCLAW_main.o Visualizer2D.o
+	$(GCC) $(CCFLAGS) -o $@ $+ $(LDFLAGS) $(EXTRA_LDFLAGS)
+	mkdir -p ./bin/$(OSLOWER)/$(TARGET)
+	cp $@ ./bin/$(OSLOWER)/$(TARGET)
+
+cudaclaw: Riemann_Flux.o probleml_setup.o boundary_conditions.o CUDACLAW_main_noVis.o 
 	$(GCC) $(CCFLAGS) -o $@ $+ $(LDFLAGS) $(EXTRA_LDFLAGS)
 	mkdir -p ./bin/$(OSLOWER)/$(TARGET)
 	cp $@ ./bin/$(OSLOWER)/$(TARGET)
