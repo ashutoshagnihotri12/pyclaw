@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 	real simulation_endTime = 5.0f;
 	while (simulationTime < simulation_endTime)
 	{
-		simulationTime += step<shallow_water_horizontal, shallow_water_vertical, limiter_MC, boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective>>(problemParam, shallow_water_h, shallow_water_v, phi, reflective_conditions);
+		simulationTime += step<shallow_water_horizontal, shallow_water_vertical, limiter_MC, boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective> >(problemParam, shallow_water_h, shallow_water_v, phi, reflective_conditions);
 		printf("Simulation Time is: %fs\n", simulationTime);
 	}
 	gracefulExit();
