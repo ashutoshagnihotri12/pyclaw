@@ -35,7 +35,7 @@ def shallow2D(iplot=0,htmlplot=False,outdir='./_output'):
     from clawpack import riemann
     solver.rp = riemann.rp2_shallow_roe_with_efix
     solver.num_waves = 3
-    solver.dt = 0.01
+    solver.dt_initial = 0.001
     solver.dt_variable = False
 
     solver.bc_lower[0] = pyclaw.BC.extrap
@@ -82,11 +82,11 @@ def shallow2D(iplot=0,htmlplot=False,outdir='./_output'):
     # Set up controller and controller parameters
     #===========================================================================
     claw = pyclaw.Controller()
-    claw.tfinal = 1.0
+    claw.tfinal = 2.5
     claw.solution = pyclaw.Solution(state,domain)
     claw.solver = solver
     claw.outdir = outdir
-    claw.num_output_times = 250
+    claw.num_output_times = 25
 
     #===========================================================================
     # Solve the problem

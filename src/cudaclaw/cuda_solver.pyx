@@ -165,6 +165,8 @@ class CUDASolver2D(clawpack.pyclaw.ClawSolver2D):
         self.allocate_workspace(solution)
         self.allocate_bc_arrays(solution.state)
 
+        self._is_set_up = True
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def evolve_to_time(self,solution,tend=None):
@@ -216,15 +218,15 @@ class CUDASolver2D(clawpack.pyclaw.ClawSolver2D):
         if tend <= tstart and not take_one_step:
             self.logger.info("Already at or beyond end time: no evolution required.")
             self.max_steps = 0
-                
+           
+        state = solution.state
+
+        if not state.synced:
+            self.qbc = state.get_qbc_from_q(self.num_ghost,self.qbc)
+     
         # Main time-stepping loop
         for n in xrange(self.max_steps):
-            
-            state = solution.state
-           
-            if not state.synced:
-                self.qbc = state.get_qbc_from_q(self.num_ghost,self.qbc)
-
+                       
             # Adjust dt so that we hit tend exactly if we are near tend
             if not take_one_step:
                 if solution.t + self.dt > tend and tstart < tend:
@@ -245,7 +247,7 @@ class CUDASolver2D(clawpack.pyclaw.ClawSolver2D):
             # Verbose messaging
             self.logger.debug("Step %i  CFL = %f   dt = %f   t = %f"
                 % (n,float('NaN'),self.dt,solution.t))
-                    
+
             self.write_gauge_values(solution)
             # Increment number of time steps completed
             self.status['numsteps'] += 1
