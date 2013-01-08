@@ -9,11 +9,13 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 extern __shared__ real shared_elem[];
 template <const int numStates, const int numWaves, const int numCoeff, const unsigned int blockSize, class Riemann ,class Limiter>
-__global__ void fused_Riemann_limiter_horizontal_update_kernel(pdeParam param, real dt, Riemann Riemann_solver_h, Limiter phi)
+__global__ void fused_Riemann_limiter_horizontal_update_kernel(pdeParam param, Riemann Riemann_solver_h, Limiter phi)
 {
 	int col = threadIdx.x + blockIdx.x*HORIZONTAL_BLOCKSIZEX - 3*blockIdx.x;//- 3*blockDim.x;	// 3 if we want to use limiters
 	int row = threadIdx.y + blockIdx.y*HORIZONTAL_BLOCKSIZEY;
 	
+	real dt = *param.dt;
+
 	real apdq[numStates];
 	real amdq[numStates];
 
@@ -217,10 +219,12 @@ __global__ void fused_Riemann_limiter_horizontal_update_kernel(pdeParam param, r
 
 extern __shared__ real shared_elem[];
 template <const int numStates, const int numWaves, const int numCoeff, const unsigned int blockSize, class Riemann ,class Limiter>
-__global__ void fused_Riemann_limiter_vertical_update_kernel(pdeParam param, real dt, Riemann Riemann_solver_v, Limiter phi)
+__global__ void fused_Riemann_limiter_vertical_update_kernel(pdeParam param, Riemann Riemann_solver_v, Limiter phi)
 {
 	int col = threadIdx.x + blockIdx.x*VERTICAL_BLOCKSIZEX;
 	int row = threadIdx.y + blockIdx.y*VERTICAL_BLOCKSIZEY - 3*blockIdx.y;//- 3*blockDim.y;	// 3 if we want to use limiters
+
+	real dt = *param.dt;
 
 	real apdq[numStates];
 	real amdq[numStates];
@@ -432,18 +436,43 @@ __global__ void timeStepAdjust(pdeParam param, real desired_CFL, int size1, int 
 		param.waveSpeedsX[0] = desired_CFL/(speedx/param.dx + speedy/param.dy);
 }
 
-extern __shared__ real shared_elem[];
-__global__ void timeStepAdjust_simple(pdeParam param, real desired_CFL)
+__global__ void timeStepAdjust_simple(pdeParam param)
 {
-	if (threadIdx.x == 0)
-		param.waveSpeedsX[0] = desired_CFL/(param.waveSpeedsX[0]/param.dx + param.waveSpeedsY[0]/param.dy);
+	// check CFL violation and determine next time step dt
+	real u = param.waveSpeedsX[0];
+	real v = param.waveSpeedsY[0];
+	real dx = param.dx;
+	real dy = param.dy;
+	real dt = *param.dt;
+	real dt_used = *param.dt_used;
+	if (dt*(u/dx + v/dy) > 1.0f)	// if CFL condition violated
+	{
+		// simulation did not advance, no time is to be incremented to the global simulation time
+		dt_used = 0.0f;
+		// compute a new dt with a stricter assumption
+		dt = param.CFL_lower_bound/(u/dx + v/dy);
+
+		// condition failed do not swap buffers, effectively reverts the time step
+		*param.revert = false;
+	}
+	else	// else if no violation was recorded
+	{
+		// remember the time step used to increment the global simulation time
+		dt_used = dt;
+		// compute the the next dt to be used
+		dt = param.desired_CFL/(u/dx + v/dy);
+
+		// allow buffer swap
+		*param.revert = true;
+	}
+	*param.dt = dt;
+	*param.dt_used = dt_used;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////   Wrapper Function   ////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <class Riemann_h, class Riemann_v, class Limiter>
 /*extern "C"*/void limited_Riemann_Update(pdeParam &param,						// Problem parameters
-										real dt,								//
 										Riemann_h Riemann_pointwise_solver_h,	//
 										Riemann_v Riemann_pointwise_solver_v,	//
 										Limiter limiter_phi						//
@@ -474,7 +503,7 @@ template <class Riemann_h, class Riemann_v, class Limiter>
 
 		dim3 dimGrid_h(gridDim_X, gridDim_Y);
 		dim3 dimBlock_h(blockDim_X, blockDim_Y);
-		fused_Riemann_limiter_horizontal_update_kernel<NUMSTATES, NUMWAVES, NUMCOEFF, blockDim_X*blockDim_Y, Riemann_h, Limiter><<<dimGrid_h, dimBlock_h, SharedMemorySize>>>(param, dt, Riemann_pointwise_solver_h, limiter_phi);
+		fused_Riemann_limiter_horizontal_update_kernel<NUMSTATES, NUMWAVES, NUMCOEFF, blockDim_X*blockDim_Y, Riemann_h, Limiter><<<dimGrid_h, dimBlock_h, SharedMemorySize>>>(param, Riemann_pointwise_solver_h, limiter_phi);
 		
 		horizontal_gridSize = gridDim_X * gridDim_Y;
 	}
@@ -489,7 +518,7 @@ template <class Riemann_h, class Riemann_v, class Limiter>
 
 		dim3 dimGrid_v(gridDim_X, gridDim_Y);
 		dim3 dimBlock_v(blockDim_X, blockDim_Y);
-		fused_Riemann_limiter_vertical_update_kernel<NUMSTATES, NUMWAVES, NUMCOEFF, blockDim_X*blockDim_Y, Riemann_v, Limiter><<<dimGrid_v, dimBlock_v, SharedMemorySize>>>(param, dt, Riemann_pointwise_solver_v, limiter_phi);
+		fused_Riemann_limiter_vertical_update_kernel<NUMSTATES, NUMWAVES, NUMCOEFF, blockDim_X*blockDim_Y, Riemann_v, Limiter><<<dimGrid_v, dimBlock_v, SharedMemorySize>>>(param, Riemann_pointwise_solver_v, limiter_phi);
 		
 		vertical_gridSize = gridDim_X * gridDim_Y;
 	}
@@ -513,16 +542,21 @@ template <class Riemann_h, class Riemann_v, class Limiter>
 		
 		reduceMax_simplified<blockDim_X><<< dimGrid2, dimBlock2, SharedMemorySize>>>(param.waveSpeedsY, vertical_gridSize);
 	
-		timeStepAdjust_simple<<<1,1>>>(param, (real)0.90f);
+		timeStepAdjust_simple<<<1,1>>>(param);
+
+		bool revert;
+		cudaMemcpy(&revert, param.revert, sizeof(bool), cudaMemcpyDeviceToHost);
+		if (revert)
+		{
+			// Swap q and qNew before stepping again
+			// At this stage qNew became old and q has the latest state that is
+			// because q was updated based on qNew, which right before 'step'
+			// held the latest update.
+			real* temp = param.qNew;
+			param.qNew = param.q;
+			param.q = temp;
+		}
 	}
-	
-	// Swap q and qNew before stepping
-	// At this stage qNew is old and q has the latest state that is
-	// because q was updated based on qNew, which right before 'step'
-	// held the latest update.
-	real* temp = param.qNew;
-	param.qNew = param.q;
-	param.q = temp;
 }
 
 #endif

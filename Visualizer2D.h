@@ -780,26 +780,26 @@ __global__ void copyDisplay_Flat_Kernel(GLfloat* PBO, int dispResolutionX, int d
 		
 		if (colorScheme)
 		{
-			setDisplayPBO_color(PBO, dispResolutionX, dispResolutionY, row, col, intensity*average);
+			setDisplayPBO_color(PBO, dispResolutionX, dispResolutionY, dispResolutionY - 1 - row, col, intensity*average);
 
 			if (!boundary_display)
 			{
 				if (col < ghostCells || col >= dispResolutionX - ghostCells)
-					setDisplayPBO_color(PBO, dispResolutionX, dispResolutionY, row, col, 0.0f);
+					setDisplayPBO_color(PBO, dispResolutionX, dispResolutionY, dispResolutionY - 1 - row, col, 0.0f);
 				else if (row < ghostCells || row >= dispResolutionY - ghostCells)
-					setDisplayPBO_color(PBO, dispResolutionX, dispResolutionY, row, col, 0.0f);
+					setDisplayPBO_color(PBO, dispResolutionX, dispResolutionY, dispResolutionY - 1 - row, col, 0.0f);
 			}
 		}
 		else
 		{
-			setDisplayPBO_grayScale(PBO, dispResolutionX, dispResolutionY, row, col, intensity*average);
+			setDisplayPBO_grayScale(PBO, dispResolutionX, dispResolutionY, dispResolutionY - 1 - row, col, intensity*average);
 
 			if (!boundary_display)
 			{
 				if (col < ghostCells || col >= dispResolutionX - ghostCells)
-					setDisplayPBO_grayScale(PBO, dispResolutionX, dispResolutionY, row, col, 0.0f);
+					setDisplayPBO_grayScale(PBO, dispResolutionX, dispResolutionY, dispResolutionY - 1 - row, col, 0.0f);
 				else if (row < ghostCells || row >= dispResolutionY - ghostCells)
-					setDisplayPBO_grayScale(PBO, dispResolutionX, dispResolutionY, row, col, 0.0f);
+					setDisplayPBO_grayScale(PBO, dispResolutionX, dispResolutionY, dispResolutionY - 1 - row, col, 0.0f);
 			}
 		}
 	}

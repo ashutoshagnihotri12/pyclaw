@@ -13,15 +13,16 @@ real step	(pdeParam &param,						// Problem parameters
 			 BCS boundary_conditions)				// Boundary conditions put in one object
 
 {
-	static real dt = (real)0.0f; /*/ param.dx/5;	//	awesome failing effects!!/*/
+	//static real dt = (real)0.0001f; /*/ param.dx/5;	//	awesome failing effects!!/*/
+	real dt;
 
 	setBoundaryConditions(param, boundary_conditions);
 	
-	limited_Riemann_Update(param, dt, Riemann_pointwise_solver_h, Riemann_pointwise_solver_v, limiter_phi);
+	limited_Riemann_Update(param, Riemann_pointwise_solver_h, Riemann_pointwise_solver_v, limiter_phi);
 	
-	cudaMemcpy(&dt, param.waveSpeedsX, sizeof(real), cudaMemcpyDeviceToHost);
+	cudaMemcpy(&dt, param.dt_used, sizeof(real), cudaMemcpyDeviceToHost);
 
-	//printf("time step dt: %f\n", dt);
+	printf("time step dt: %f\n", dt);
 
 	return dt;
 }

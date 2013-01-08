@@ -47,7 +47,7 @@ struct BC_right_absorbing
 					param.setElement_qNew(row, col, k, param.getElement_qNew(row, boundary_start-1, k));
 	}
 };
-struct BC_down_absorbing
+struct BC_up_absorbing
 {
 	__device__ void operator()(pdeParam param, int col)
 	{
@@ -61,7 +61,7 @@ struct BC_down_absorbing
 					param.setElement_qNew(row, col, k, param.getElement_qNew(boundary_start-1, col, k));
 	}
 };
-struct BC_up_absorbing
+struct BC_down_absorbing
 {
 	__device__ void operator()(pdeParam param, int col)
 	{
@@ -113,7 +113,7 @@ struct BC_right_reflective
 			}
 	}
 };
-struct BC_down_reflective
+struct BC_up_reflective
 {
 	__device__ void operator()(pdeParam param, int col)
 	{
@@ -132,7 +132,7 @@ struct BC_down_reflective
 			}
 	}
 };
-struct BC_up_reflective
+struct BC_down_reflective
 {
 	__device__ void operator()(pdeParam param, int col)
 	{

@@ -46,11 +46,12 @@ int main(int argc, char** argv)
 	real simulation_start_time = 0.0f;
 	real simulation_end_time = 1.0f;
 
-	pdeParam problemParam = setupShallowWater(-1, 1, -1, ratio, simulation_start_time, simulation_end_time, radial_plateau);
+	real snapshotRate = 0.1f;
+
+	pdeParam problemParam = setupShallowWater(-1, 1, -1, ratio, simulation_start_time, simulation_end_time, snapshotRate, radial_plateau);
 
 	//pdeParam problemParam = setupAcoustics(0,1,0,ratio, /*off_circle_q/*/centered_circle_q/**/, uniform_coefficients);
 
-	problemParam.setSnapshotRate(0.1f);
 	real simulationTime = 0.0f;
 	real simulationStepTime = 0.0f;
 	real simulationTimeInterval = 0.0f;
@@ -59,8 +60,8 @@ int main(int argc, char** argv)
 	step<shallow_water_horizontal, shallow_water_vertical, limiter_MC, boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective>>(problemParam, shallow_water_h, shallow_water_v, phi, reflective_conditions);
 	problemParam.takeSnapshot(0, "pde data");	// take initial state snapshot
 
-	int step_number = 1;
-	
+	int snap_number = 1;
+
 	while (simulationTime < problemParam.endTime)
 	{
 		simulationStepTime = step<shallow_water_horizontal, shallow_water_vertical, limiter_MC, boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective>>(problemParam, shallow_water_h, shallow_water_v, phi, reflective_conditions);
@@ -70,11 +71,12 @@ int main(int argc, char** argv)
 		simulationTimeInterval += simulationStepTime;
 		if (simulationTimeInterval > problemParam.snapshotTimeInterval)
 		{
-			problemParam.takeSnapshot(step_number, "pde data");
+			problemParam.takeSnapshot(snap_number, "pde data");
 			simulationTimeInterval = 0.0f;
-			step_number++;
+			snap_number++;
 		}
 	}
+	problemParam.clean();
 	gracefulExit();
 }
 
