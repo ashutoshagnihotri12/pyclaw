@@ -133,21 +133,14 @@ class cuda_build_ext(build_ext):
 
 if __name__ == '__main__':
     setup(cmdclass = {'build_ext': cuda_build_ext},
-	      ext_modules = [Extension("solver",
+	      ext_modules = [Extension("cuda_solver",
                          language="c++",
- 	  				     sources=["solver.pyx", 
+ 	  				     sources=["cuda_solver.pyx", 
  	  				     		  "cudaclaw.cu",
  	  				     		  "boundary_conditions.cu"],
  	  				     library_dirs=[CUDA['lib']],
  	  				     libraries=['cudart'],
  	  				     runtime_library_dirs=[CUDA['lib']],
           				 include_dirs=[numpy.get_include(),CUDA['include']])],
-                        [Extension("state",
-                         language="c++",
-                         sources=["cuda_solver.pyx"]
-                         library_dirs=[CUDA['lib']],
-                         libraries=['cudart'],
-                         runtime_library_dirs=[CUDA['lib']],
-                         include_dirs=[numpy.get_include(),CUDA['include']])]
-
+          
 		  **configuration(top_path='').todict())

@@ -52,7 +52,7 @@ class CUDAState(clawpack.pyclaw.State):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def set_q_from_qbc(self, int num_ghost, np.ndarray[real, ndim=2, mode="fortran"] qbc):
+    def set_q_from_qbc(self, int num_ghost, np.ndarray[real, ndim=3, mode="fortran"] qbc):
         r"""
         Set the value of q using the array qbc. For CUDASolver, this
         involves retrieving from device memory into qbc, then copying 
@@ -61,13 +61,13 @@ class CUDAState(clawpack.pyclaw.State):
 
         cdef int err
 
-        err = hyperbolic_solver_2d_get_qbc(&qbc[0,0])
+        err = hyperbolic_solver_2d_get_qbc(&qbc[0,0,0])
         check_err(err)
 
         self.q = qbc[:,num_ghost:-num_ghost,num_ghost:-num_ghost]
         synced = True
 
-    def get_qbc_from_q(self, num_ghost, np.ndarray[real, ndim=2, mode="fortran"] qbc):
+    def get_qbc_from_q(self, num_ghost, np.ndarray[real, ndim=3, mode="fortran"] qbc):
         """
         Fills in the interior of qbc by copying q to it.  For CUDASolver,
         this involves copying the appropriate data into qbc, then copying
@@ -78,13 +78,13 @@ class CUDAState(clawpack.pyclaw.State):
 
         qbc[:,num_ghost:-num_ghost,num_ghost:-num_ghost] = self.q
 
-        err = hyperbolic_solver_2d_set_qbc(&qbc[0,0])
+        err = hyperbolic_solver_2d_set_qbc(&qbc[0,0,0])
         check_err(err)
         synced = True
 
         return qbc
 
-class CUDASolver(clawpack.pyclaw.solver.Solver):
+class CUDASolver2D(clawpack.pyclaw.ClawSolver2D):
     r"""  See the corresponding PyClaw Solver documentation."""
 
     @cython.boundscheck(False)
@@ -212,9 +212,7 @@ class CUDASolver(clawpack.pyclaw.solver.Solver):
         if take_one_step:
             self.max_steps = 1
         else:
-            self.max_steps = int((tend - tstart + 1e-10) / self.dt)
-            if abs(self.max_steps*self.dt - (tend - tstart)) > 1e-5 * (tend-tstart):
-                raise Exception('dt does not divide (tend-tstart) and dt is fixed!')
+            self.max_steps = int((tend - tstart) / self.dt)
         if tend <= tstart and not take_one_step:
             self.logger.info("Already at or beyond end time: no evolution required.")
             self.max_steps = 0
@@ -225,7 +223,7 @@ class CUDASolver(clawpack.pyclaw.solver.Solver):
             state = solution.state
            
             if not state.synced:
-                self.qbc = state.get_qbc_from_q(solution,self.num_ghost,state.q)
+                self.qbc = state.get_qbc_from_q(self.num_ghost,self.qbc)
 
             # Adjust dt so that we hit tend exactly if we are near tend
             if not take_one_step:
@@ -233,9 +231,15 @@ class CUDASolver(clawpack.pyclaw.solver.Solver):
                     self.dt = tend - solution.t
                 if tend - solution.t - self.dt < 1.e-14:
                     self.dt = tend - solution.t
-    
+            
+            saved_dt = self.dt
+
+            ### explicitly hard-code dt here
+
             self.step(solution)
     
+            self.dt = saved_dt
+
             # Accept this step
             solution.t = tstart+(n+1)*self.dt
             # Verbose messaging
