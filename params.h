@@ -15,8 +15,7 @@ struct pdeParam
 	const int numCoeff;		// number of different types medium properties
 
 	bool entropy_fix;		// entropy fix flag
-
-	//real dt;				// time step is not exactly a problem parameter
+	bool second_order;		// second order accuracy computation flag
 
 	real width;				// physical domain's width
 	real height;			// physical domain's height;
@@ -30,8 +29,17 @@ struct pdeParam
 	const real startTime;	// simulation start time
 	const real endTime;		// simulation end time
 
+	real desired_CFL;		// a CFL number which determines the next time step length (dt)
+	real CFL_lower_bound;	// lower bound on the CFL to be used
+
 	bool snapshots;				// flag to allow or disallow solution snapshots
 	real snapshotTimeInterval;	// time interval between snapshots
+	
+	real* dt;					// time step to be used in the computation
+	real* dt_used;				// time step used in the ccompleted computation (without reverting), used to increment global simulation time
+	bool* revert;				// boolean flag to determine whether the time step has to be reverted, this is because we cannot swap the buffer
+								// on the GPU itself, and it has to be done on CPU, and this is the flag that let's the CPU know what to do.
+								// Alternatively, leave all the work of determining CFL violation and time step calculation to the CPU.
 
 	real* coefficients;			// physical medium coefficients					//	GPU residents
 	real* q;					// data, cells' states							//
@@ -48,6 +56,20 @@ struct pdeParam
 		dy = height/cellsY;
 
 		entropy_fix = false;
+		second_order = true;
+
+		desired_CFL = 0.90f;
+		CFL_lower_bound = 0.45f;
+
+		real dt_cpu = 10.0f;
+		real dt_used_cpu = 0.0f;
+		
+		cudaError_t alloc_real1 = cudaMalloc((void**)&dt, sizeof(real));
+		cudaError_t alloc_real2 = cudaMalloc((void**)&dt_used, sizeof(real));
+		cudaError_t alloc_bool1 = cudaMalloc((void**)&revert, sizeof(bool));
+		
+		cudaMemcpy(dt, &dt_cpu, sizeof(real), cudaMemcpyHostToDevice);
+		cudaMemcpy(dt_used, &dt_used_cpu, sizeof(real), cudaMemcpyHostToDevice);
 
 		snapshots = false;
 
@@ -80,6 +102,20 @@ struct pdeParam
 		dy = height/cellsY;
 
 		entropy_fix = false;
+		second_order = true;
+		
+		desired_CFL = 0.90f;
+		CFL_lower_bound = 0.9f;
+
+		real dt_cpu = 10.0f;
+		real dt_used_cpu = 0.0f;
+		
+		cudaError_t alloc_real1 = cudaMalloc((void**)&dt, sizeof(real));
+		cudaError_t alloc_real2 = cudaMalloc((void**)&dt_used, sizeof(real));
+		cudaError_t alloc_bool1 = cudaMalloc((void**)&revert, sizeof(bool));
+		
+		cudaMemcpy(dt, &dt_cpu, sizeof(real), cudaMemcpyHostToDevice);
+		cudaMemcpy(dt_used, &dt_used_cpu, sizeof(real), cudaMemcpyHostToDevice);
 
 		snapshots = false;
 
@@ -108,6 +144,21 @@ struct pdeParam
 		free(zerosX);
 		free(zerosY);
 	};
+	void setOrderOfAccuracy(int order)
+	{
+		if(order == 2)
+			second_order = true;
+		else
+			second_order = false;
+	}
+	void setDesiredCFL(real desired_CFL)
+	{
+		this->desired_CFL = desired_CFL;
+	}
+	void setLowerBoundCFL(real lower_bound_CFL)
+	{
+		CFL_lower_bound = lower_bound_CFL;
+	}
 
 	void clean()
 	{
@@ -116,6 +167,9 @@ struct pdeParam
 		cudaFree(q);
 		cudaFree(qNew);
 		cudaFree(coefficients);
+		cudaFree(revert);
+		cudaFree(dt_used);
+		cudaFree(dt);
 	};
 
 	void setSnapshotRate(real interval)
