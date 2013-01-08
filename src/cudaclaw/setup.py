@@ -73,10 +73,6 @@ try:
 except AttributeError:
     numpy_include = numpy.get_numpy_include()
 
-cuda_multiply = Extension('cuda_multiply',
-						  sources=['cuda_multiply.cu'])
-
-
 def configuration(parent_package='',top_path=None):
     from numpy.distutils.misc_util import Configuration
     config = Configuration(
@@ -107,7 +103,8 @@ def customize_compiler_for_nvcc(self):
     # based on source extension: we add it.
     def _compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
     	postargs = []
-        if os.path.splitext(src)[1] == '.cu':
+        if True: 
+#        if os.path.splitext(src)[1] == '.cu':
             # use the cuda compiler for .cu files
             # currently hard-coded to OS X CUDA 5 options
             self.set_executable('compiler_so', 
@@ -136,12 +133,21 @@ class cuda_build_ext(build_ext):
 
 if __name__ == '__main__':
     setup(cmdclass = {'build_ext': cuda_build_ext},
-	      ext_modules = [Extension("multiply_cuda",
- 	  				     sources=["multiply.pyx", 
- 	  				     		  "c_multiply.c",
- 	  				     		  "cuda_multiply.cu"],
+	      ext_modules = [Extension("solver",
+                         language="c++",
+ 	  				     sources=["solver.pyx", 
+ 	  				     		  "cudaclaw.cu",
+ 	  				     		  "boundary_conditions.cu"],
  	  				     library_dirs=[CUDA['lib']],
  	  				     libraries=['cudart'],
  	  				     runtime_library_dirs=[CUDA['lib']],
-          				 include_dirs=[numpy.get_include()])],
+          				 include_dirs=[numpy.get_include(),CUDA['include']])],
+                        [Extension("state",
+                         language="c++",
+                         sources=["cuda_solver.pyx"]
+                         library_dirs=[CUDA['lib']],
+                         libraries=['cudart'],
+                         runtime_library_dirs=[CUDA['lib']],
+                         include_dirs=[numpy.get_include(),CUDA['include']])]
+
 		  **configuration(top_path='').todict())
