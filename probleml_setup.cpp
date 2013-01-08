@@ -22,7 +22,7 @@ void radial_plateau(pdeParam &param)	// For Shallow Water equations specifically
 			{
 				if (state == 0)
 				{
-					if ( x*x + y*y < plateau_radius*plateau_radius)
+					if (x*x + y*y < plateau_radius*plateau_radius)
 						param.setElement_q_cpu(cpu_q, row, col, state, 0.8f);
 					else
 						param.setElement_q_cpu(cpu_q, row, col, state, 0.5f);
@@ -292,7 +292,7 @@ void some_function_coefficients(pdeParam &param)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////  Problem Setting  /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, real time_start, real time_end, void (*init_q)(pdeParam &), void (*init_coeff)(pdeParam &,real*) )
+pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, real time_start, real time_end, real snapshotRate, void (*init_q)(pdeParam &), void (*init_coeff)(pdeParam &,real*) )
 {
 	pdeParam param(
 		CELLSX,		//cellsX
@@ -308,6 +308,9 @@ pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, real
 		time_start,	//startTime
 		time_end	//endTime
 		);
+	
+	if (snapshotRate != 0.0f)
+		param.setSnapshotRate(snapshotRate);
 
 	real u[2] = {1.0, 4.0};
 	init_q(param);
@@ -316,7 +319,7 @@ pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, real
 	return param;
 }
 
-pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, real time_start, real time_end, void (*init_q)(pdeParam &), void (*init_coeff)(pdeParam &) )
+pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, real time_start, real time_end, real snapshotRate, void (*init_q)(pdeParam &), void (*init_coeff)(pdeParam &) )
 {
 	pdeParam param(
 		CELLSX,		//cellsX
@@ -332,6 +335,9 @@ pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, real
 		time_start,	//startTime
 		time_end	//endTime
 		);
+	
+	if (snapshotRate != 0.0f)
+		param.setSnapshotRate(snapshotRate);
 
 	init_q(param);
 	init_coeff(param);
@@ -340,7 +346,7 @@ pdeParam setupAcoustics(real x_start, real x_end, real y_start, real y_end, real
 }
 
 
-pdeParam setupShallowWater(real x_start, real x_end, real y_start, real y_end, real time_start, real time_end, void(*init_q)(pdeParam &))
+pdeParam setupShallowWater(real x_start, real x_end, real y_start, real y_end, real time_start, real time_end, real snapshotRate, void(*init_q)(pdeParam &))
 {
 	pdeParam param(
 		CELLSX,		//cellsX
@@ -356,6 +362,9 @@ pdeParam setupShallowWater(real x_start, real x_end, real y_start, real y_end, r
 		time_start,	//startTime
 		time_end	//endTime
 		);
+	
+	if (snapshotRate != 0.0f)
+		param.setSnapshotRate(snapshotRate);
 
 	init_q(param);
 
