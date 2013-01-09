@@ -229,10 +229,8 @@ struct pdeParam
 	// Dictates how the memory layout for q will be
 	inline __device__ __host__ int getIndex_q(int row, int column, int state)
 	{
-		// Usual C/C++ row major order
 		//return (row*cellsX*numStates + column*numStates + state);
-		// state is the slowest moving dimension now, then row, then column
-		return (state*cellsX*cellsY + row*cellsX + column);
+		return (row*cellsX*numStates + column*numStates + state);
 	}
 	inline __device__ real &getElement_q(int row, int column, int state)
 	{
@@ -257,8 +255,7 @@ struct pdeParam
 	{
 		// Usual C/C++ row major order
 		//return (row*cellsX*numStates + column*numStates + state);
-		// state is the slowest moving dimension now, then row, then column
-		return (state*cellsX*cellsY + row*cellsX + column);
+		return (row*cellsX*numStates + column*numStates + state);
 	}
 	inline __device__ real &getElement_qNew(int row, int column, int state)
 	{
@@ -273,9 +270,9 @@ struct pdeParam
 	inline __device__ __host__ int getIndex_coeff(int row, int column, int coeff)
 	{
 		// Usual C/C++ row major order
-		//return (row*cellsX*numCoeff + column*numCoeff + coeff);
+		return (row*cellsX*numCoeff + column*numCoeff + coeff);
 		// coeff is the slowest moving dimension now, then row, then column
-		return (coeff*cellsX*cellsY + row*cellsX + column);
+		// return (coeff*cellsX*cellsY + row*cellsX + column);
 	}
 	inline __device__ real &getElement_coeff(int row, int column, int coeff)
 	{

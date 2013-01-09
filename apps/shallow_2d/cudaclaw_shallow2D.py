@@ -103,7 +103,6 @@ def shallow2D(iplot=0,htmlplot=False,outdir='./_output'):
 if __name__=="__main__":
     from clawpack.pyclaw.util import run_app_from_main
     output = run_app_from_main(shallow2D)
-    print 'Error: ', output
 
 
 
