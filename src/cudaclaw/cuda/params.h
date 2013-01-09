@@ -3,7 +3,7 @@
 
 #include <string>
 
-typedef float real;
+typedef double real;
 
 struct pdeParam
 {
@@ -74,8 +74,8 @@ struct pdeParam
 		snapshots = false;
 
 		int cells = cellsX*cellsY;
-		int horizontal_blocks = ((CELLSX-1 + HORIZONTAL_BLOCKSIZEX-3-1)/(HORIZONTAL_BLOCKSIZEX-3)) * ((CELLSY + HORIZONTAL_BLOCKSIZEY-1)/(HORIZONTAL_BLOCKSIZEY));
-		int vertical_blocks = ((CELLSX + VERTICAL_BLOCKSIZEX-1)/(VERTICAL_BLOCKSIZEX)) * ((CELLSY-1 + VERTICAL_BLOCKSIZEY-3-1)/(VERTICAL_BLOCKSIZEY-3));
+		int horizontal_blocks = ((cellsX-1 + HORIZONTAL_BLOCKSIZEX-3-1)/(HORIZONTAL_BLOCKSIZEX-3)) * ((cellsY + HORIZONTAL_BLOCKSIZEY-1)/(HORIZONTAL_BLOCKSIZEY));
+		int vertical_blocks = ((cellsX + VERTICAL_BLOCKSIZEX-1)/(VERTICAL_BLOCKSIZEX)) * ((cellsY-1 + VERTICAL_BLOCKSIZEY-3-1)/(VERTICAL_BLOCKSIZEY-3));
 
 		cudaError_t alloc1 = cudaMalloc((void**)&coefficients, cells*numCoeff*sizeof(real));
 		cudaError_t alloc2 = cudaMalloc((void**)&q, cells*numStates*sizeof(real));

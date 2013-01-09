@@ -89,7 +89,7 @@ int hyperbolic_solver_2d_step (real dt, real* next_dt)
 {
 
 	setBoundaryConditions(*param, bc);
-	limited_Riemann_Update(*param, dt, 
+	limited_Riemann_Update(*param, 
 						   shallow_water_h, 
 						   shallow_water_v, 
 						   phi_mc);

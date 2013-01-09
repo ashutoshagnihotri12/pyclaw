@@ -1,7 +1,7 @@
 # distutils: language = c++
 
 """
-cuda_solver.pyx
+cudaclaw.pyx
 
 Cythonized bindings to CUDA-enabled hyperbolic solvers for PyClaw
 

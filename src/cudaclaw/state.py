@@ -1,1 +1,1 @@
-from cuda_solver import CUDAState as State
+from cudaclaw import CUDAState as State
