@@ -18,12 +18,6 @@
 //  so, isExtensionSupported method is modified to use sets
 ///////////////////////////////////////////////////////////////////////////////
 
-//#include <windows.h> //might not need this
-#include <iostream>
-#include <cstring>
-#include <sstream>
-#include <iomanip>
-#include <algorithm>
 #include "glInfo.h"
 
 using namespace std;

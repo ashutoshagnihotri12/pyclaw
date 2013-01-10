@@ -5,21 +5,7 @@
 #include <windows.h>
 #endif
 
-#include <iostream>
-
-#include "common.h"
-
 #include "glInfo.h"
-#include <cuda_gl_interop.h>
-
-#ifdef __APPLE__		// if Apple, macintosh
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#include <glut.h>
-#else
-#include <GL/gl.h>
-#include <gl/glut.h>	// else if windows, or linux
-#endif
 
 //TODO: Add interactivity, or not
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

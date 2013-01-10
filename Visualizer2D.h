@@ -1,4 +1,3 @@
-
 #ifndef __VISUALIZER2D_H__
 #define __VISUALIZER2D_H__
 
