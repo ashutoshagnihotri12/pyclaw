@@ -251,21 +251,21 @@ __global__ void fused_Riemann_limiter_vertical_update_kernel(pdeParam param, Rie
 		#pragma unroll
 		for (int i = 0; i < numStates; i++)
 		{
-			upCell[i] = param.getElement_qNew(row,col,i);
-			downCell[i] = param.getElement_qNew(row+1,col,i);
+			upCell[i] = param.getElement_qNew(row+1,col,i);
+			downCell[i] = param.getElement_qNew(row,col,i);
 		}
 		#pragma unroll
 		for (int i = 0; i < numCoeff; i++)
 		{
-			upCoeff[i] = param.getElement_coeff(row,col,i);
-			downCoeff[i] = param.getElement_coeff(row+1,col,i);
+			upCoeff[i] = param.getElement_coeff(row+1,col,i);
+			downCoeff[i] = param.getElement_coeff(row,col,i);
 		}
 
-		Riemann_solver_v(	upCell,		// input comes from global memory
-							downCell,	//
-							numStates,	//
-							upCoeff,	//
-							downCoeff,	//
+		Riemann_solver_v(	downCell,		// input comes from global memory
+							upCell,			//
+							numStates,		//
+							downCoeff,		//
+							upCoeff,		//
 			/*shared*/		&getSharedWave(waves, threadIdx.y, threadIdx.x, 0, 0, numStates, numWaves, VERTICAL_BLOCKSIZEX),
 			/*shared*/		&getWaveSpeed(waveSpeeds, threadIdx.y, threadIdx.x, 0, numWaves, VERTICAL_BLOCKSIZEX));
 	}

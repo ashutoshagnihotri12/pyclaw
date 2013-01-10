@@ -1,3 +1,4 @@
+#define VIS
 #include "cudaClaw_main.h"
 
 #include <iostream>
@@ -17,19 +18,19 @@ typedef Visualizer2D<acoustics_horizontal, acoustics_vertical, limiter_MC,
 	//boundaryConditions<BC_left_absorbing, BC_right_absorbing, BC_up_absorbing, BC_down_absorbing> > acoustics_vis;
 
 typedef Visualizer2D<shallow_water_horizontal, shallow_water_vertical, limiter_MC, 
-	boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective> > shallowWater_vis;
+	boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_absorbing> > shallowWater_vis;
 
 int main(int argc, char** argv)
 {
 	setupCUDA();
 
 	// Boundary setup
-	boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_reflective> reflective_conditions;
+	boundaryConditions<BC_left_reflective, BC_right_reflective, BC_up_reflective, BC_down_absorbing> reflective_conditions;
 
 	BC_left_reflective left;
 	BC_right_reflective right;
 	BC_up_reflective up;
-	BC_down_reflective down;
+	BC_down_absorbing down;
 
 	//boundaryConditions<BC_left_absorbing, BC_right_absorbing, BC_up_absorbing, BC_down_absorbing> absorbing_conditions;
 	//BC_left_absorbing left;
