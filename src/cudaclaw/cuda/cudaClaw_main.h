@@ -2,7 +2,7 @@
 #define __CUDACLAW_MAIN_H__
 
 #include <math.h>
-#include "common.h"
+#include "common_vis.h"
 #include "problem_setup.h"
 #include "Visualizer2D.h"
 #include "GlutInterface.h"

@@ -5,21 +5,7 @@
 #include <windows.h>
 #endif
 
-#include <iostream>
-
-#include "common.h"
-
 #include "glInfo.h"
-#include <cuda_gl_interop.h>
-
-#ifdef __APPLE__		// if Apple, macintosh
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#include <glut.h>
-#else
-#include <GL/gl.h>
-#include <gl/glut.h>	// else if windows, or linux
-#endif
 
 //TODO: Add interactivity, or not
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -131,4 +117,4 @@ extern "C" void copyDisplayData(GLfloat* PBO, int dispResolutionX, int dispResol
 extern "C" void copyDisplayData_Flat(GLfloat* PBO, int dispResolutionX, int dispResolutionY,
 								real* q, int cellsX, int cellsY, int numStates, int ghostCells,
 								int state_display, bool boundary_display, bool colorScheme, GLfloat intensity, GLfloat floor, GLfloat ceil);
-#endif
+#endif	// end of visuals

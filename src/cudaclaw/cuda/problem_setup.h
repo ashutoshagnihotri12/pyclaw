@@ -5,9 +5,9 @@
 #define NUMWAVES 3
 #define NUMCOEFF 1
 
+#include <math.h>
 
 #include "common.h"
-#include <math.h>
 
 // State initial value functions
 void mid_Gaussian_q(pdeParam &);
