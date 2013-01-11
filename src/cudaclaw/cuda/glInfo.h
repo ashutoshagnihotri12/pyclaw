@@ -22,7 +22,12 @@
 
 #include <string>
 #include <set>
-#include <gl/glew.h>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <algorithm>
+
+#include "common_vis.h"
 
 using namespace std;
 
