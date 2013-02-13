@@ -197,23 +197,23 @@ class SharpClawSolver(Solver):
 
         try:
             if self.time_integrator=='Euler':
-                deltaq=self.dq(state)
+                deltaq,max_weight=self.dq(state)
                 state.q+=deltaq
 
             elif self.time_integrator=='SSP33':
-                deltaq=self.dq(state)
+                deltaq,max_weight=self.dq(state)
                 self._rk_stages[0].q=state.q+deltaq
                 self._rk_stages[0].t =state.t+self.dt
 
                 if self.call_before_step_each_stage:
                     self.before_step(self,self._rk_stages[0])
-                deltaq=self.dq(self._rk_stages[0])
+                deltaq,dummy=self.dq(self._rk_stages[0])
                 self._rk_stages[0].q= 0.75*state.q + 0.25*(self._rk_stages[0].q+deltaq)
                 self._rk_stages[0].t = state.t+0.5*self.dt
 
                 if self.call_before_step_each_stage:
                     self.before_step(self,self._rk_stages[0])
-                deltaq=self.dq(self._rk_stages[0])
+                deltaq,dummy=self.dq(self._rk_stages[0])
                 state.q = 1./3.*state.q + 2./3.*(self._rk_stages[0].q+deltaq)
 
 
@@ -222,14 +222,14 @@ class SharpClawSolver(Solver):
                 s2=self._rk_stages[1]
                 s1.q = state.q.copy()
 
-                deltaq=self.dq(state)
+                deltaq,max_weight=self.dq(state)
                 s1.q = state.q + deltaq/6.
                 s1.t = state.t + self.dt/6.
 
                 for i in xrange(4):
                     if self.call_before_step_each_stage:
                         self.before_step(self,s1)
-                    deltaq=self.dq(s1)
+                    deltaq,dummy=self.dq(s1)
                     s1.q=s1.q + deltaq/6.
                     s1.t =s1.t + self.dt/6.
 
@@ -240,18 +240,20 @@ class SharpClawSolver(Solver):
                 for i in xrange(4):
                     if self.call_before_step_each_stage:
                         self.before_step(self,s1)
-                    deltaq=self.dq(s1)
+                    deltaq,dummy=self.dq(s1)
                     s1.q=s1.q + deltaq/6.
                     s1.t =s1.t + self.dt/6.
                 
                 if self.call_before_step_each_stage:
                     self.before_step(self,s1)
-                deltaq = self.dq(s1)
+                deltaq,dummy = self.dq(s1)
                 state.q = s2.q + 0.6 * s1.q + 0.1 * deltaq
             else:
                 raise Exception('Unrecognized time integrator')
         except CFLError:
             return False
+
+        print max_weight
 
 
     def set_mthlim(self):
@@ -267,7 +269,7 @@ class SharpClawSolver(Solver):
         Evaluate dq/dt * (delta t)
         """
 
-        deltaq = self.dq_hyperbolic(state)
+        deltaq, max_weight = self.dq_hyperbolic(state)
 
         # Check here if we violated the CFL condition, if we did, return 
         # immediately to evolve_to_time and let it deal with picking a new
@@ -278,7 +280,7 @@ class SharpClawSolver(Solver):
         if self.dq_src is not None:
             deltaq+=self.dq_src(self,state,self.dt)
 
-        return deltaq
+        return deltaq, max_weight
 
     def dq_hyperbolic(self,state):
         raise NotImplementedError('You must subclass SharpClawSolver.')
@@ -459,7 +461,7 @@ class SharpClawSolver1D(SharpClawSolver):
                 raise NotImplementedError('TVD reconstruction not implemented')
             elif self.lim_type==2: #WENO Reconstruction
                 if self.char_decomp==0: #No characteristic decomposition
-                    ql,qr=recon.weno(5,q)
+                    ql,qr, max_weight=recon.weno(5,q)
                 elif self.char_decomp==1: #Wave-based reconstruction
                     q_l=q[:,:-1]
                     q_r=q[:,1: ]
@@ -497,7 +499,7 @@ class SharpClawSolver1D(SharpClawSolver):
             raise Exception('Unrecognized value of solver.kernel_language.')
 
         self.cfl.update_global_max(cfl)
-        return dq[:,self.num_ghost:-self.num_ghost]
+        return dq[:,self.num_ghost:-self.num_ghost], max_weight
     
 
 # ========================================================================

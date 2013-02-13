@@ -45,12 +45,13 @@ def weno(k, q):
     for m in range(q.shape[0]):
         smoothness(q[m,:], sigma)
 
+        max_smoothness = (np.max(sigma[2*k:-2*k,:].reshape(-1)),np.argmax(sigma[2*k:-2*k,:].reshape(-1)))
+
         weights_l(sigma, weights)
         reconstruct_l(q[m,:], weights, ql[m,:])
 
         weights_r(sigma, weights)
         reconstruct_r(q[m,:], weights, qr[m,:])
-
 
     # XXX: copy ghost-cells.  i'm not sure why this is necessary, but
     # it make the acoustics examples in the implicit time-stepping
@@ -62,4 +63,4 @@ def weno(k, q):
     qr[:,:k-1]  = qr[:,-2*k+2:-k+1]
     qr[:,-k+1:] = qr[:,k-1:2*k-2]
 
-    return ql, qr
+    return ql, qr, max_smoothness
