@@ -805,4 +805,30 @@ contains
       return
       end subroutine tvd2_wave
 
+    ! ===================================================================
+    subroutine weno_comp(q,ql,qr,num_eqn,maxnx,num_ghost)
+    ! ===================================================================
+
+        use poly
+        use clawparams, only: poly_order
+        implicit none
+
+        integer,          intent(in) :: num_eqn, maxnx, num_ghost
+        double precision, intent(in) :: q(num_eqn,maxnx+2*num_ghost)
+        double precision, intent(out) :: ql(num_eqn,maxnx+2*num_ghost),qr(num_eqn,maxnx+2*num_ghost)
+
+        select case(poly_order)
+        case (4)
+           call poly4(q,ql,qr,num_eqn,maxnx,num_ghost)
+        case (6)
+           call poly6(q,ql,qr,num_eqn,maxnx,num_ghost)           
+        case (8)
+           call poly8(q,ql,qr,num_eqn,maxnx,num_ghost)           
+        case default
+           print *, 'ERROR: poly_order must be an even number between 4 and 8.'
+           stop
+        end select
+
+    end subroutine poly_comp
+
 end module reconstruct
