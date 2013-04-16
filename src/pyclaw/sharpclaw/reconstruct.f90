@@ -806,7 +806,7 @@ contains
       end subroutine tvd2_wave
 
     ! ===================================================================
-    subroutine weno_comp(q,ql,qr,num_eqn,maxnx,num_ghost)
+    subroutine poly_comp(q,ql,qr,num_eqn,maxnx,num_ghost)
     ! ===================================================================
 
         use poly
