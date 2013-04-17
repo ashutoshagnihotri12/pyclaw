@@ -47,12 +47,18 @@ class SharpClawSolver(Solver):
         0: No limiting.
         1: TVD reconstruction.
         2: WENO reconstruction.
+        3: WENO5 reconstruction
+        4: POLY reconstruction.
         ``Default = 2``
 
     .. attribute:: weno_order
 
         Order of the WENO reconstruction. From 1st to 17th order (PyWENO)
         ``Default = 5``
+
+    .. attribute:: interpolation_order
+
+        Generalized attribute for the order of either the WENO or polynomial reconstructions
 
     .. attribute:: time_integrator
 
@@ -132,6 +138,8 @@ class SharpClawSolver(Solver):
         self.before_step = before_step
         self.lim_type = 2
         self.weno_order = 5
+        self.poly_order = 6
+        self.interpolation_order = 5
         self.time_integrator = 'SSP104'
         self.char_decomp = 0
         self.tfluct_solver = False
@@ -155,7 +163,10 @@ class SharpClawSolver(Solver):
         """
         Allocate RK stage arrays and fortran routine work arrays.
         """
-        self.num_ghost = (self.weno_order+1)/2
+        if self.lim_type==3
+            self.num_ghost = self.interpolation_order/2
+        else
+            self.num_ghost = (self.weno_order+1)/2
 
         # This is a hack to deal with the fact that petsc4py
         # doesn't allow us to change the stencil_width (num_ghost)
@@ -308,6 +319,7 @@ class SharpClawSolver(Solver):
         clawparams.num_dim       = grid.num_dim
         clawparams.lim_type      = self.lim_type
         clawparams.weno_order    = self.weno_order
+        clawparams.interpolation_order = self.interpolation_order
         clawparams.char_decomp   = self.char_decomp
         clawparams.tfluct_solver = self.tfluct_solver
         clawparams.fwave         = self.fwave

@@ -122,6 +122,8 @@ subroutine flux1(q1d,dq1d,aux,dt,cfl,t,ixy,num_aux,num_eqn,mx,num_ghost,maxnx,rp
         end select
         case(3)
             call weno5(q1d,ql,qr,num_eqn,maxnx,num_ghost)
+        case(4)
+            call poly_comp(q,ql,qr,num_eqn,maxnx,num_ghost)
       end select
 
 

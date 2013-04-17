@@ -42,6 +42,9 @@ contains
             case(3)
                 allocate(uu(2,maxnx+2*num_ghost))
                 allocate( dq1m(maxnx+2*num_ghost))
+            case(4)
+                allocate(uu(2,maxnx+2*num_ghost))
+                allocate( dq1m(maxnx+2*num_ghost))
         end select
         recon_alloc = .True.
 
@@ -77,6 +80,13 @@ contains
                     deallocate(hh)
                     deallocate(uh)
             end select
+            case(3)
+                deallocate(uu)
+                deallocate(dq1m)
+            case(4)
+                deallocate(uu)
+                deallocate(dq1m)
+            
             recon_alloc = .False.
         end select
     end subroutine dealloc_recon_workspace
@@ -810,14 +820,14 @@ contains
     ! ===================================================================
 
         use poly
-        use clawparams, only: poly_order
+        use clawparams, only: interpolation_order
         implicit none
 
         integer,          intent(in) :: num_eqn, maxnx, num_ghost
         double precision, intent(in) :: q(num_eqn,maxnx+2*num_ghost)
         double precision, intent(out) :: ql(num_eqn,maxnx+2*num_ghost),qr(num_eqn,maxnx+2*num_ghost)
 
-        select case(poly_order)
+        select case(interpolation_order)
         case (4)
            call poly4(q,ql,qr,num_eqn,maxnx,num_ghost)
         case (6)
