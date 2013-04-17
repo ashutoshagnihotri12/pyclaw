@@ -138,7 +138,6 @@ class SharpClawSolver(Solver):
         self.before_step = before_step
         self.lim_type = 2
         self.weno_order = 5
-        self.poly_order = 6
         self.interpolation_order = 5
         self.time_integrator = 'SSP104'
         self.char_decomp = 0
@@ -163,9 +162,9 @@ class SharpClawSolver(Solver):
         """
         Allocate RK stage arrays and fortran routine work arrays.
         """
-        if self.lim_type==3
-            self.num_ghost = self.interpolation_order/2
-        else
+        if self.lim_type==4:
+            self.num_ghost = self.interpolation_order/2 + 1
+        else:
             self.num_ghost = (self.weno_order+1)/2
 
         # This is a hack to deal with the fact that petsc4py

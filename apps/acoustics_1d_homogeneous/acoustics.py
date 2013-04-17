@@ -21,6 +21,8 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
     elif solver_type=='sharpclaw':
         solver = pyclaw.SharpClawSolver1D()
         solver.weno_order=weno_order
+        solver.lim_type = 4
+        solver.interpolation_order = 6
     else: raise Exception('Unrecognized value of solver_type.')
 
     #========================================================================

@@ -5,7 +5,7 @@ module ClawParams
   integer :: num_dim, num_waves, index_capa
 
 ! Method-related parameters:
-  integer :: char_decomp,lim_type,multid_recon,weno_order
+  integer :: char_decomp,lim_type,multid_recon,weno_order,interpolation_order
   integer, allocatable :: mthlim(:)
   logical :: fwave, tfluct_solver
 
