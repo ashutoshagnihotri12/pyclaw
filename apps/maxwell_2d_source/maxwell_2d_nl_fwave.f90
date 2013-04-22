@@ -1,44 +1,46 @@
-    subroutine rpn2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,auxl,auxr, &
-    fwave,s,amdq,apdq,num_aux)
-!     =====================================================
+subroutine rpn2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,auxl,auxr, fwave,s,amdq,apdq,num_aux)
+! ===============================================================================
+!
+!   # This version outputs f-waves.
 
-!     # This version outputs f-waves.
+!   # Riemann solver for the time dependent nonlinear Maxwell em equations in 1d,
+!   # in this case eps and mu dependend on time and position,
+!   # variable coefficients
+!   #   kappa1(q,t,r)*(q1)_t + (q2)_x           = -(eps)_t*(q1)
+!   #   kappa2(q,t,r)*(q2)_t + (q1)_y           = -(mu)_t*(q2)
+!   #   kappa3(q,t,r)*(q3)_t + (q2)_y - (q1)_x  = -(mu)_t*(q3) 
+!   #
+!   # where q1=Eq, q2=E, q3=H, eps=f(x,t), and mu=g(x,t)
+!   # and kappa1 = eps + 2*chi2_e_r*E1 + 3*chi3_e*E1^2
+!   # and kappa2 = eps + 2*chi2_e_r*E2 + 3*chi3_e*E2^2
+!   # and kappa3 = mu  + 2*chi2_m_r*H3 + 3*chi3_m*H3^2
+!   #
+!   # aux(1,i) = eps(i)
+!   # aux(2,i) = mu(i)
+!   # aux(3,i) = eps_t(i)
+!   # aux(4,i) = mu_t(i)
 
-!     # Riemann solver for the time dependent nonlinear em equations in 1d,
-!     # in this case eps and mu dependend on time and position,
-!     #  variable coefficients
-!     #   kappa1(q,t,x) (q1)_t +  (q2)_x  = -eps_t E
-!     #   kappa2(q,t,x) (q2)_t +  (q1)_x = -mu_t H
-!     # where q1=E, q2=H, eps=f(x,t), and mu=g(x,t)
-!     # and kappa1 = eps + 2*chi2_e_r*E + 3*chi3_e*E^2
-!     # and kappa2 = mu  + 2*chi2_m_r*H + 3*chi3_m*H^2
+!   # function f(x_i,t_i) gives the permittivity value at the ith cell at step t_i
+!   # function g(x_i,t_i) gives the permeability value at the ith cell at step t_i
+!   #    For RIP:   f(x_i,t_i)=f(x_i-v*t_i), and g(x_i,t_i)=g(x_i-v*t_i)
+!   # the system assumes the em functions to be some constant value + transient part
 
-!     # aux(1,i) = eps(i)
-!     # aux(2,i) = mu(i)
-!     # aux(3,i) = eps_t(i)
-!     # aux(4,i) = mu_t(i)
+!   # On input, ql contains the state vector at the left edge of each cell
+!   #           qr contains the state vector at the right edge of each cell
 
-!     # function f(x_i,t_i) gives the permittivity value at the ith cell at step t_i
-!     # function g(x_i,t_i) gives the permeability value at the ith cell at step t_i
-!     #    For RIP:   f(x_i,t_i)=f(x_i-v*t_i), and g(x_i,t_i)=g(x_i-v*t_i)
-!     # the system assumes the em functions to be some constant value + transient part
+!   # On output, fwave contains the waves as jumps in f,
+!   #            s the speeds,
+!   #
+!   #            amdq = A^- Delta q,
+!   #            apdq = A^+ Delta q,
+!   #                   the decomposition of the flux difference minus the source term
+!   #                       f(qr(i-1)) - f(ql(i)) - \psi(q,x,t)
+!   #                   into leftgoing and rightgoing parts respectively.
+!   #
 
-!     # On input, ql contains the state vector at the left edge of each cell
-!     #           qr contains the state vector at the right edge of each cell
-
-!     # On output, fwave contains the waves as jumps in f,
-!     #            s the speeds,
-!     #
-!     #            amdq = A^- Delta q,
-!     #            apdq = A^+ Delta q,
-!     #                   the decomposition of the flux difference minus the source term
-!     #                       f(qr(i-1)) - f(ql(i)) - \psi(q,x,t)
-!     #                   into leftgoing and rightgoing parts respectively.
-!     #
-
-!     # Note that the ith Riemann problem has left state qr(:,i-1)
-!     #                                    and right state ql(:,i)
-!     # From the basic clawpack routines, this routine is called with ql = qr
+!   # Note that the ith Riemann problem has left state qr(:,i-1)
+!   #                                    and right state ql(:,i)
+!   # From the basic clawpack routines, this routine is called with ql = qr
 
 
     implicit none

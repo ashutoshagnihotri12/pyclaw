@@ -6,16 +6,16 @@ import numpy as np
 
 # -------- GLOBAL SCALAR DEFINITIONS -----------------------------
 # ======== all definitions are in m,s,g unit system.
-n_frames = 30
-x_lower = 0.0e-6
-x_upper = 10e-6					# lenght [m]
+n_frames = 10
+x_lower = 0.
+x_upper = 1 #10e-6					# lenght [m]
 # ........ material properties ...................................
 
 # vacuum
 eo = 8.854187817e-12			# vacuum permittivity   - [F/m]
 mo = 4e-7*np.pi 				# vacuum peremeability  - [V.s/A.m]
 co = 1/np.sqrt(eo*mo)			# vacuum speed of light - [m/s]
-zo = np.sqrt(eo/mo)
+zo = np.sqrt(mo/eo)
 # material
 mat_shape = 'homogeneous'			# material definition: homogeneous, interface, rip (moving perturbation), multilayered
 
@@ -72,8 +72,8 @@ chi2_m 		= 0.0
 chi3_m 		= 0.0
 
 # ........ excitation - initial conditoons .......................
-ex_type  = 'plane'
-alambda  = 1e-6				# wavelength
+ex_type  = 'off'
+alambda  = .1				# wavelength
 ex_t_sig = 1.0*alambda			# width in time (pulse only)
 ex_x_sig = 1.0*alambda			# width in the x-direction (pulse)
 ex_toff  = 0.0 					# offset in time
@@ -117,7 +117,7 @@ def etar(t,x):
          3: mu_t
 	"""
 	
-	eta = np.empty( (4,len(x)), order='F')
+	eta = np.empty( [4,len(x)], order='F')
 
 	if mat_shape=='moving_gauss':
 		u_x_e = x - rip_vx_e*t - rip_xoff_e
@@ -179,7 +179,7 @@ def update_aux(solver,state):
 
 #	next function might be redundant since it already exists as deltan	
 def setaux(t,x):
-	aux = np.empty( (4,len(x)), order='F')
+	aux = np.empty( [4,len(x)], order='F')
 	aux[:,:] = etar(t,x)
 	return aux
 
@@ -289,6 +289,9 @@ def em1D(kernel_language='Fortran',iplot=False,htmlplot=False,use_petsc=False,sa
 		solver=pyclaw.SharpClawSolver1D()
 		solver.num_waves = 2
 		solver.weno_order = 5
+		solver.lim_type = 4
+		solver.interpolation_order = 6
+
 
 	solver.dt_initial = ddt
 	solver.max_steps = max_steps
@@ -334,7 +337,7 @@ def em1D(kernel_language='Fortran',iplot=False,htmlplot=False,use_petsc=False,sa
 	state.problem_data['zo'] = zo
 
 	# Boundary conditions
-	solver.bc_lower[0] = pyclaw.BC.custom
+	solver.bc_lower[0] = pyclaw.BC.extrap
 	solver.bc_upper[0] = pyclaw.BC.extrap
 	solver.aux_bc_lower[0]=pyclaw.BC.custom
 	solver.aux_bc_upper[0]=pyclaw.BC.custom
@@ -342,6 +345,7 @@ def em1D(kernel_language='Fortran',iplot=False,htmlplot=False,use_petsc=False,sa
 	solver.user_aux_bc_lower = setaux_lower
 	solver.user_aux_bc_upper = setaux_upper
 
+	print mx
 	#Initial condition
 	qinit(state)
 
