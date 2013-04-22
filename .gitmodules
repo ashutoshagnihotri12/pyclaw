@@ -1,0 +1,3 @@
+[submodule "empyclaw"]
+	path = apps
+	url = git@github.com:damiansra/empyclaw.git
