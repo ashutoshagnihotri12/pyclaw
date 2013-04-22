@@ -18,10 +18,11 @@ def acoustics(use_petsc=False,kernel_language='Fortran',norder=4,solver_type='cl
 
     if solver_type=='classic':
         solver = pyclaw.ClawSolver1D()
+        solver.limiters = pyclaw.limiters.tvd.MC
     elif solver_type=='sharpclaw':
         solver = pyclaw.SharpClawSolver1D()
         solver.weno_order=weno_order
-        solver.lim_type = 4
+        solver.lim_type = 2
         solver.interpolation_order = norder
     else: raise Exception('Unrecognized value of solver_type.')
 
@@ -38,7 +39,6 @@ def acoustics(use_petsc=False,kernel_language='Fortran',norder=4,solver_type='cl
         from clawpack.riemann import rp1_acoustics
         solver.rp = rp1_acoustics
 
-    solver.limiters = pyclaw.limiters.tvd.MC
 
     solver.bc_lower[0] = pyclaw.BC.periodic
     solver.bc_upper[0] = pyclaw.BC.periodic
