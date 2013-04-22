@@ -138,7 +138,7 @@ class SharpClawSolver(Solver):
         self.before_step = before_step
         self.lim_type = 2
         self.weno_order = 5
-        self.interpolation_order = 5
+        self.interpolation_order = 6
         self.time_integrator = 'SSP104'
         self.char_decomp = 0
         self.tfluct_solver = False

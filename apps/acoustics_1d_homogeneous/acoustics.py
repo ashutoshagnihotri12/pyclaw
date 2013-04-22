@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
     
-def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',iplot=False,htmlplot=False,outdir='./_output',weno_order=5, disable_output=False):
+def acoustics(use_petsc=False,kernel_language='Fortran',norder=4,solver_type='classic',iplot=False,htmlplot=False,outdir='./_output',weno_order=5, disable_output=False, nx=100):
     """
     This example solves the 1-dimensional acoustics equations in a homogeneous
     medium.
@@ -22,7 +22,7 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
         solver = pyclaw.SharpClawSolver1D()
         solver.weno_order=weno_order
         solver.lim_type = 4
-        solver.interpolation_order = 6
+        solver.interpolation_order = norder
     else: raise Exception('Unrecognized value of solver_type.')
 
     #========================================================================
@@ -46,7 +46,7 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
     #========================================================================
     # Instantiate the domain and set the boundary conditions
     #========================================================================
-    x = pyclaw.Dimension('x',0.0,1.0,100)
+    x = pyclaw.Dimension('x',0.0,1.0,nx)
     domain = pyclaw.Domain(x)
     num_eqn = 2
     state = pyclaw.State(domain,num_eqn)

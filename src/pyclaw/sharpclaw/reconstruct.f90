@@ -829,11 +829,13 @@ contains
 
         select case(interpolation_order)
         case (4)
-           call poly4(q,ql,qr,num_eqn,maxnx,num_ghost)
+            call poly4(q,ql,qr,num_eqn,maxnx,num_ghost)
         case (6)
-           call poly6(q,ql,qr,num_eqn,maxnx,num_ghost)           
+            call poly6(q,ql,qr,num_eqn,maxnx,num_ghost)           
         case (8)
-           !call poly8(q,ql,qr,num_eqn,maxnx,num_ghost)           
+            call poly8(q,ql,qr,num_eqn,maxnx,num_ghost)
+        case(10)
+            call poly10(q,ql,qr,num_eqn,maxnx,num_ghost)          
         case default
            print *, 'ERROR: poly_order must be an even number between 4 and 8.'
            stop
