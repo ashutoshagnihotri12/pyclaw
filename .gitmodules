@@ -1,0 +1,3 @@
+[submodule "apps/maxwell"]
+	path = apps/maxwell
+	url = git@github.com:damiansra/em-pyclaw.git
