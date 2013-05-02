@@ -21,8 +21,8 @@ def acoustics(use_petsc=False,kernel_language='Fortran',norder=4,solver_type='cl
         solver.limiters = pyclaw.limiters.tvd.MC
     elif solver_type=='sharpclaw':
         solver = pyclaw.SharpClawSolver1D()
-        solver.weno_order=weno_order
-        solver.lim_type = 4
+        solver.weno_order = norder
+        solver.lim_type = 2
         solver.interpolation_order = norder
     else: raise Exception('Unrecognized value of solver_type.')
 
