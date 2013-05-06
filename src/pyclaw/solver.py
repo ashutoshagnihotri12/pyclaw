@@ -646,48 +646,81 @@ class Solver(object):
                 q_backup = state.q.copy('F')
                 told = solution.t
             
-            self.step(solution)
+            dummy, err_est = self.step(solution)
 
-            # Check to make sure that the Courant number was not too large
-            cfl = self.cfl.get_cached_max()
-            if cfl <= self.cfl_max:
-                # Accept this step
-                self.status['cflmax'] = max(cfl, self.status['cflmax'])
-                if self.dt_variable==True:
-                    solution.t += self.dt 
+            if err_est is None:
+                # Check to make sure that the Courant number was not too large
+                cfl = self.cfl.get_cached_max()
+                if cfl <= self.cfl_max:
+                    # Accept this step
+                    self.status['cflmax'] = max(cfl, self.status['cflmax'])
+                    if self.dt_variable==True:
+                        solution.t += self.dt 
+                    else:
+                        #Avoid roundoff error if dt_variable=False:
+                        solution.t = tstart+(n+1)*self.dt
+                    # Verbose messaging
+                    self.logger.debug("Step %i  CFL = %f   dt = %f   t = %f"
+                        % (n,cfl,self.dt,solution.t))
+                        
+                    self.write_gauge_values(solution)
+                    # Increment number of time steps completed
+                    self.status['numsteps'] += 1
                 else:
-                    #Avoid roundoff error if dt_variable=False:
-                    solution.t = tstart+(n+1)*self.dt
-                # Verbose messaging
-                self.logger.debug("Step %i  CFL = %f   dt = %f   t = %f"
-                    % (n,cfl,self.dt,solution.t))
-                    
-                self.write_gauge_values(solution)
-                # Increment number of time steps completed
-                num_steps += 1
-                self.status['numsteps'] += 1
-            else:
-                # Reject this step
-                self.logger.debug("Rejecting time step, CFL number too large")
+                    # Reject this step
+                    self.logger.debug("Rejecting time step, CFL number too large")
+                    if self.dt_variable:
+                        state.q = q_backup
+                        solution.t = told
+                    else:
+                        # Give up, we cannot adapt, abort
+                        self.status['cflmax'] = \
+                            max(cfl, self.status['cflmax'])
+                        raise Exception('CFL too large, giving up!')
+                        
+                # Choose new time step
                 if self.dt_variable:
-                    state.q = q_backup
-                    solution.t = told
-                else:
-                    # Give up, we cannot adapt, abort
-                    self.status['cflmax'] = \
-                        max(cfl, self.status['cflmax'])
-                    raise Exception('CFL too large, giving up!')
-                    
-            # Choose new time step
-            if self.dt_variable:
-                if cfl > 0.0:
-                    self.dt = min(self.dt_max,self.dt * self.cfl_desired 
-                                    / cfl)
-                    self.status['dtmin'] = min(self.dt, self.status['dtmin'])
-                    self.status['dtmax'] = max(self.dt, self.status['dtmax'])
-                else:
-                    self.dt = self.dt_max
+                    if cfl > 0.0:
+                        self.dt = min(self.dt_max,self.dt * self.cfl_desired 
+                                        / cfl)
+                        self.status['dtmin'] = min(self.dt, self.status['dtmin'])
+                        self.status['dtmax'] = max(self.dt, self.status['dtmax'])
+                    else:
+                        self.dt = self.dt_max
 
+            else: # Choose new step size based on error estimate
+                if err_est <= self.error_tolerance: 
+                    # accept step
+                    if self.dt_variable:
+                        solution.t += self.dt 
+                    else:
+                        #Avoid roundoff error if dt_variable=False:
+                        solution.t = tstart+(n+1)*self.dt
+                        
+                    self.write_gauge_values(solution)
+                    # Increment number of time steps completed
+                    self.status['numsteps'] += 1
+                else:
+                    # Reject this step
+                    self.logger.debug("Rejecting time step, error too large")
+                    if self.dt_variable:
+                        state.q = q_backup
+                        solution.t = told
+                    else:
+                        # Give up, we cannot adapt, abort
+                        self.status['cflmax'] = \
+                            max(cfl, self.status['cflmax'])
+                        raise Exception('error large, giving up!')
+
+                # Choose new time step
+                if self.dt_variable:
+                    kappa = 0.9
+                    p = 3.0
+                    alpha = 0.7/p
+                    dt_ratio  = kappa * (self.error_tolerance/err_est)**alpha
+                    self.dt = self.dt*min(2.0,max(0.5,dt_ratio))
+                    print err_est, dt_ratio, self.dt, self.dt/state.grid.delta[0]
+ 
             # See if we are finished yet
             if solution.t >= tend or take_one_step:
                 break

@@ -21,6 +21,20 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
     elif solver_type=='sharpclaw':
         solver = pyclaw.SharpClawSolver1D()
         solver.weno_order=weno_order
+        solver.time_integrator = 'RK'
+        from nodepy import rk
+        import numpy as np
+        #ssp3 = rkm.SSPRK3(4).__num__()
+        rkm = rk.loadRKM('DP5').__num__()
+        solver.A = rkm.A
+        solver.b = rkm.b
+        #solver.b_hat = np.array([1./3,1./3,1./3,0.])
+        #solver.b_hat = rkm.bhat
+        solver.c = rkm.c
+        #solver.error_tolerance = 1.e-5
+        solver.dt_variable = True
+        solver.cfl_max = 3.
+        solver.cfl_desired = 1.5
     else: raise Exception('Unrecognized value of solver_type.')
 
     #========================================================================
@@ -63,7 +77,8 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
     xc=grid.x.center
     state.q[0,:] = np.cos(2*np.pi*xc)
     state.q[1,:] = 0.
-    
+    solver.dt_initial=domain.grid.delta[0]/state.problem_data['cc']*0.01
+
     #========================================================================
     # Set up the controller object
     #========================================================================

@@ -147,10 +147,11 @@ class SharpClawSolver(Solver):
         self._mthlim = self.limiters
         self._method = None
         self._rk_stages = None
-
-        self.a = None
+        self.A = None
         self.b = None
+        self.b_hat = None
         self.c = None
+        self.error_tolerance = None
         
 
         # Call general initialization function
@@ -211,6 +212,7 @@ class SharpClawSolver(Solver):
         'SSP33'  : 3rd-order strong stability preserving method of Shu & Osher
         'SSP104' : 4th-order strong stability preserving method Ketcheson
         """
+        import numpy as np
         state = solution.states[0]
 
         self.before_step(self,state)
@@ -268,7 +270,7 @@ class SharpClawSolver(Solver):
                     self.before_step(self,s1)
                 deltaq = self.dq(s1)
                 state.q = s2.q + 0.6 * s1.q + 0.1 * deltaq
-                
+
             elif self.time_integrator=='RK':
                 # General RK with specified coefficients
                 # self._rk_stages[i].q actually stores f(y_i)
@@ -276,16 +278,30 @@ class SharpClawSolver(Solver):
                 for i in range(num_stages):
                     self._rk_stages[i].q = state.q.copy()
                     for j in range(i):
-                        self._rk_stages[i].q += self.a[i,j]*self._rk_stages[j].q
+                        self._rk_stages[i].q += self.A[i,j]*self._rk_stages[j].q
                     self._rk_stages[i].t = state.t + self.dt * self.c[i]
                     self._rk_stages[i].q = self.dq(self._rk_stages[i])
 
+                if self.b_hat is not None:
+                    self._rk_stages[num_stages].q = state.q.copy()
+                    for j in range(num_stages):
+                        self._rk_stages[num_stages].q += self.b_hat[j]*self._rk_stages[j].q
+
                 for j in range(num_stages):
                     state.q += self.b[j]*self._rk_stages[j].q
+ 
+                if self.b_hat is not None:
+                    err_est = np.linalg.norm(state.q[0,:]-self._rk_stages[num_stages].q[0,:])*state.grid.delta[0]
+                else:
+                    err_est = None
+
             else:
                 raise Exception('Unrecognized time integrator')
         except CFLError:
+            raise Exception('CFL error')
             return False
+
+        return True, err_est
 
 
     def _set_mthlim(self):
