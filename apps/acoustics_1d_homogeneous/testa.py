@@ -3,7 +3,7 @@ import numpy.linalg as npl
 import time
 import acoustics
 from matplotlib import pylab
-f = open('workfile', 'a')
+
 
 def calc_p(test,f):
     p = np.log(test[1,1:]/test[1,0:-1])/np.log(test[0,1:]/test[0,0:-1])
@@ -13,11 +13,12 @@ def calc_p(test,f):
 
 # initialize arrays and number of points
 idx = 0
-j = np.arange(4,18)
+j = np.arange(4,15)
 N = 2**j
 ctest = np.zeros([4,3,len(N)])
 
 for i,k in enumerate(range(2,6,1)):
+    f = open('workfile', 'a')
     porder = 2*k
     for n in N:
         start = time.clock()
@@ -30,19 +31,19 @@ for i,k in enumerate(range(2,6,1)):
         print ctest[i,0,idx],ctest[i,1,idx],t
         idx +=1
     
-
     calc_p(ctest[i,:,:],f)
     ap = 'poly_test' + str(k) + '.txt'
     fp = open(ap, 'w')
     np.savetxt(fp,ctest[i,:,:]) 
     fp.close() 
     idx = 0 
+    f.close()
     # pylab.figure()
     # pylab.plot(ctest)
     # pylab.show()
 
 # close workfile
-f.close()
+#f.close()
 
 # plot results
 pylab.clf()
