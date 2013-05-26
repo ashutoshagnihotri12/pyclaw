@@ -658,7 +658,7 @@ class Solver(object):
                     #Avoid roundoff error if dt_variable=False:
                     solution.t = tstart+(n+1)*self.dt
                 # Verbose messaging
-                self.logger.debug("Step %i  CFL = %f   dt = %f   t = %f"
+                self.logger.debug("Step %i  CFL = %s   dt = %s   t = %s"
                     % (n,cfl,self.dt,solution.t))
                 self.write_gauge_values(solution)
                 # Increment number of time steps completed

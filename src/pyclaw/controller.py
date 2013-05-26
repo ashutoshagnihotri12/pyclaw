@@ -304,7 +304,7 @@ class Controller(object):
                                             self.output_options)
             self.write_F()
 
-            self.log_info("Solution %s computed for time t=%f"
+            self.log_info("Solution %s computed for time t=%s"
                 % (frame,self.solution.t))
             for gfile in self.solution.state.grid.gauge_files: 
                 gfile.flush()
