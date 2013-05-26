@@ -630,14 +630,14 @@ class Solver(object):
                 
         # Main time-stepping loop
         for n in xrange(self.max_steps):
-            
+
             state = solution.state
             
             # Adjust dt so that we hit tend exactly if we are near tend
             if not take_one_step:
                 if solution.t + self.dt > tend and tstart < tend:
                     self.dt = tend - solution.t
-                if tend - solution.t - self.dt < 1.e-14:
+                if tend - solution.t - self.dt < self.dt_max:
                     self.dt = tend - solution.t
 
             # Keep a backup in case we need to retake a time step
@@ -660,13 +660,15 @@ class Solver(object):
                 # Verbose messaging
                 self.logger.debug("Step %i  CFL = %f   dt = %f   t = %f"
                     % (n,cfl,self.dt,solution.t))
-                    
+                print self.dt, solution.t    
                 self.write_gauge_values(solution)
                 # Increment number of time steps completed
                 self.status['numsteps'] += 1
             else:
                 # Reject this step
                 self.logger.debug("Rejecting time step, CFL number too large")
+                print self.dt_variable, cfl, self.cfl_max, self.max_steps,self.dt,tend,solution.t 
+                1/0
                 if self.dt_variable:
                     state.q = q_backup
                     solution.t = told
