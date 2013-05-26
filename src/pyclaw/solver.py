@@ -667,8 +667,7 @@ class Solver(object):
             else:
                 # Reject this step
                 self.logger.debug("Rejecting time step, CFL number too large")
-                print self.dt_variable, cfl, self.cfl_max, self.max_steps,self.dt,tend,solution.t 
-                1/0
+                
                 if self.dt_variable:
                     state.q = q_backup
                     solution.t = told
