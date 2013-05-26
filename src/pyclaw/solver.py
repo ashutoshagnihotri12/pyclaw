@@ -660,14 +660,13 @@ class Solver(object):
                 # Verbose messaging
                 self.logger.debug("Step %i  CFL = %f   dt = %f   t = %f"
                     % (n,cfl,self.dt,solution.t))
-                print self.dt, solution.t    
                 self.write_gauge_values(solution)
                 # Increment number of time steps completed
                 self.status['numsteps'] += 1
             else:
                 # Reject this step
                 self.logger.debug("Rejecting time step, CFL number too large")
-                
+
                 if self.dt_variable:
                     state.q = q_backup
                     solution.t = told
