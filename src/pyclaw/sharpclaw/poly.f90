@@ -37,7 +37,7 @@ contains
         integer :: i,n
 
         do n = 1,num_eqn
-            do i = num_ghost+1,maxnx+num_ghost+1
+            do i = num_ghost,maxnx+num_ghost+1
 
                 ql(n,i) = (7.d0*(q(n,-3+i) - 10.d0*q(n,-2+i) + 75.d0*q(n,-1+i) + 100.d0*q(n,i) &
                            - 25.d0*q(n,1+i) + 6.d0*q(n,2+i)) - 5.d0*q(n,3+i))/1024.d0
@@ -62,7 +62,7 @@ contains
         integer :: i,n
 
         do n = 1,num_eqn
-            do i = num_ghost+1,maxnx+num_ghost+1
+            do i = num_ghost,maxnx+num_ghost+1
                         
                 ql(n,i) = (-45.d0*q(n,-4+i) + 42.d0*(12.d0*q(n,-3+i) + 7.d0*(-10*q(n,-2+i) + 60.d0*q(n,-1+i) &
                            + 75.d0*q(n,i) - 20.d0*q(n,1+i) + 6.d0*q(n,2+i))) - 360.d0*q(n,3+i) + 35.d0*q(n,4+i))/32768.d0
@@ -87,7 +87,7 @@ contains
         integer :: i,n
 
         do n = 1,num_eqn
-            do i = num_ghost+1,maxnx+num_ghost+1
+            do i = num_ghost,maxnx+num_ghost+1
 
                 ql(n,i) = (77.d0*q(n,-5+i) - 99.d0*(10.d0*q(n,-4+i) - 7.d0*(9.d0*q(n,-3+i) - 40.d0*q(n,-2+i) &
                            + 210.d0*q(n,-1+i) + 252.d0*q(n,i) - 70.d0*q(n,1+i) + 24.d0*q(n,2+i)) + 45.d0*q(n,3+i)) &
