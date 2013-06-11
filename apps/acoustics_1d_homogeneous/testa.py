@@ -2,8 +2,9 @@ import numpy as np
 import numpy.linalg as npl
 import time
 import acoustics
-from matplotlib import pylab
-
+import matplotlib
+matplotlib.use("Agg")
+import pylab as pylab
 
 def calc_p(test,f):
     p = np.log(test[1,1:]/test[1,0:-1])/np.log(test[0,1:]/test[0,0:-1])
@@ -22,7 +23,7 @@ for i,k in enumerate(range(2,6,1)):
     porder = 2*k
     for n in N:
         start = time.clock()
-        claw = acoustics.acoustics(solver_type='sharpclaw',nx=n,norder=porder,use_petsc=1)
+        claw = acoustics.acoustics(solver_type='sharpclaw',nx=n,norder=porder)
         dx = claw.frames[-1].state.grid.delta[0]
         t = time.clock() - start
         ctest[i,1,idx] = dx*npl.norm(claw.frames[-1].q[0,:]-claw.frames[0].q[0,:],1)

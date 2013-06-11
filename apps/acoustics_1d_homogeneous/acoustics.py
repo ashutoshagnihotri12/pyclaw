@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
     
-def acoustics(use_petsc=False,kernel_language='Fortran',norder=4,solver_type='classic',iplot=False,htmlplot=False,outdir='./_output',weno_order=5, disable_output=False, nx=100):
+def acoustics(use_petsc=False,kernel_language='Fortran',norder=4,solver_type='sharpclaw',iplot=False,htmlplot=False,outdir='./_output',weno_order=5, disable_output=False, nx=100):
     """
     This example solves the 1-dimensional acoustics equations in a homogeneous
     medium.
@@ -39,8 +39,8 @@ def acoustics(use_petsc=False,kernel_language='Fortran',norder=4,solver_type='cl
         from clawpack.riemann import rp1_acoustics
         solver.rp = rp1_acoustics
 
-    solver.cfl_max = 0.15
-    solver.cfl_desired = 0.1
+    solver.cfl_max = 0.5
+    solver.cfl_desired = 0.4
     solver.max_steps = 1000000
     solver.bc_lower[0] = pyclaw.BC.periodic
     solver.bc_upper[0] = pyclaw.BC.periodic
