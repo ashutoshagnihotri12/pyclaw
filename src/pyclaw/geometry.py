@@ -59,7 +59,7 @@ class Grid(object):
         [10, 25]
         >>> grid.lower
         [0.0, -1.0]
-        >>> grid.delta
+        >>> grid.delta # Returns [dx, dy]
         [0.1, 0.08]
 
     A grid can be extended to higher dimensions using the add_dimension() method:
@@ -78,6 +78,16 @@ class Grid(object):
         -2.0
     """
 
+    def __getattr__(self,key):
+        # Provide dimension attribute lists when requested from Grid object.
+        # Note that this only gets called when one requests an attribute
+        # that the grid doesn't possess.
+        if key in ['num_cells','lower','upper','delta','units','centers','edges',
+                    'on_lower_boundary','on_upper_boundary']:
+            return self.get_dim_attribute(key)
+        else:
+            raise AttributeError("'Grid' object has no attribute '"+key+"'")
+
     # ========== Property Definitions ========================================
     @property
     def num_dim(self):
@@ -88,34 +98,6 @@ class Grid(object):
         r"""(list) - List of :class:`Dimension` objects defining the 
                 grid's extent and resolution"""
         return [getattr(self,name) for name in self._dimensions]
-    @property
-    def num_cells(self): 
-        r"""(list) - List of the number of cells in each dimension"""
-        return self.get_dim_attribute('num_cells')
-    @property
-    def lower(self):
-        r"""(list) - Lower coordinate extents of each dimension"""
-        return self.get_dim_attribute('lower')
-    @property
-    def upper(self):
-        r"""(list) - Upper coordinate extends of each dimension"""
-        return self.get_dim_attribute('upper')
-    @property
-    def delta(self):
-        r"""(list) - List of computational cell widths"""
-        return self.get_dim_attribute('delta')
-    @property
-    def units(self):
-        r"""(list) - List of dimension units"""
-        return self.get_dim_attribute('units')
-    @property
-    def centers(self):
-        r"""(list) - List of center coordinate arrays"""
-        return self.get_dim_attribute('centers')
-    @property
-    def edges(self):
-        "List of edge coordinate arrays"
-        return self.get_dim_attribute('edges')
     @property
     def p_centers(self):
         r"""(list of ndarray(...)) - List containing the arrays locating
@@ -148,16 +130,6 @@ class Grid(object):
         self.compute_c_edges(self)
         return self._c_edges
     _c_edges = None
-    @property
-    def on_lower_boundaries(self):
-        r"""(list) - List of flags, one for each dimension, showing whether
-                  the dimension is crossing a lower boundary."""
-        return self.get_dim_attribute('on_lower_boundary')
-    @property
-    def on_upper_boundaries(self):
-        r"""(list) - List of flags, one for each dimension, showing whether
-                  the dimension is crossing an upper boundary."""
-        return self.get_dim_attribute('on_upper_boundary')
 
        
     
@@ -224,7 +196,7 @@ class Grid(object):
         r"""
         Returns a tuple of all dimensions' attribute attr
         """
-        return [getattr(getattr(self,name),attr) for name in self._dimensions]
+        return [getattr(dim,attr) for dim in self.dimensions]
     
     
     # ========== Copy functionality ==========================================
@@ -365,18 +337,14 @@ class Grid(object):
         r"""
         Determine the cell indices of each gauge and make a list of all gauges
         with their cell indices.  
-        
-        For PetClaw, first check whether each gauge is in the part of the grid
-        corresponding to this grid.
-
         """
         from numpy import floor
         
         for gauge in gauge_coords: 
-            # Determine gauge locations in units of mesh spacing
+            # Check if gauge belongs to this grid:
             if all(self.lower[n]<=gauge[n]<self.upper[n] for n in range(self.num_dim)):
                 # Set indices relative to this grid
-                gauge_index = [int(floor((gauge[n]-self.lower[n])/self.delta[n])) 
+                gauge_index = [int(round((gauge[n]-self.lower[n])/self.delta[n])) 
                                for n in xrange(self.num_dim)]
                 gauge_file_name = 'gauge'+'_'.join(str(coord) for coord in gauge)+'.txt'
                 self.gauge_file_names.append(gauge_file_name)
@@ -384,8 +352,7 @@ class Grid(object):
 
     def setup_gauge_files(self,outdir):
         r"""
-        Creates and opens file objects for gauges
-
+        Creates and opens file objects for gauges.
         """
         import os
         gauge_path = os.path.join(outdir,self.gauge_dir_name)
@@ -475,6 +442,8 @@ class Dimension(object):
     _centers = None
 
     def centers_with_ghost(self,nghost):
+        r"""(ndarrary(:)) - Location of all cell center coordinates
+        for this dimension, including centers of ghost cells."""
         centers = self.centers
         pre  = np.linspace(self.lower-(nghost-0.5)*self.delta,self.lower-0.5*self.delta,nghost)
         post = np.linspace(self.upper+0.5*self.delta, self.upper+(nghost-0.5)*self.delta,nghost)
@@ -642,6 +611,15 @@ class Domain(object):
         2. Using a single argument, which is
             - A list of dimensions; or
             - A list of patches.
+
+    :Examples:
+
+        >>> from clawpack import pyclaw
+        >>> domain = pyclaw.Domain( (0.,0.), (1.,1.), (100,100))
+        >>> print domain.num_dim
+        2
+        >>> print domain.grid.num_cells
+        [100, 100]
     """
     @property
     def num_dim(self):
@@ -662,8 +640,10 @@ class Domain(object):
             upper = arg[1]
             n     = arg[2]
             dims = []
-            for low,up,nn in zip(lower,upper,n):
-                dims.append(Dimension(low,up,nn))
+            names = ['x','y','z']
+            names = names[:len(n)+1]
+            for low,up,nn,name in zip(lower,upper,n,names):
+                dims.append(Dimension(low,up,nn,name=name))
             self.patches = [Patch(dims)]
         else:
             geom = arg[0]

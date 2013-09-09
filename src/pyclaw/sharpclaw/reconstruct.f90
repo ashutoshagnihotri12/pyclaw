@@ -508,7 +508,7 @@ contains
       end forall
 
       ! loop over interfaces (i-1/2)
-      do i=2,mx2
+      do i=2,mx2+2
         ! Compute the part of the reconstruction that is
         !  stencil-independent
         do m=1,num_eqn

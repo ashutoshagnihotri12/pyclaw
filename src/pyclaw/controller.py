@@ -4,7 +4,8 @@ r"""
 Controller for basic computation and plotting setup.
 
 This module defines the Pyclaw controller class.  It can be used to perform
-simulations similar to previous versions of Clawpack, i.e. with output_style and
+simulations in a convenient manner similar to that available in previous
+versions of Clawpack, i.e. with output_style and
 output time specification.  It also can be used to set up easy plotting and 
 running of compiled fortran binaries.
 """
@@ -213,11 +214,11 @@ class Controller(object):
             
         :Ouput:
             (dict) - Return a dictionary of the status of the solver.
-            
-        :Version: 1.0 (2009-05-01)
         """
-        
         import numpy as np
+
+        if self.solver is None or self.solution is None:
+            raise Exception('To run, a Controller must have a Solver and a Solution.')
 
         self.start_frame = self.solution.start_frame
         if len(self.solution.patch.grid.gauges)>0:
@@ -265,10 +266,11 @@ class Controller(object):
                                         options = self.output_options,
                                         write_p = True) 
 
+            write_aux = (self.write_aux_always or self.write_aux_init)
             self.solution.write(frame,self.outdir,
                                         self.output_format,
                                         self.output_file_prefix,
-                                        self.write_aux_init,
+                                        write_aux,
                                         self.output_options)
 
         self.write_F('w')

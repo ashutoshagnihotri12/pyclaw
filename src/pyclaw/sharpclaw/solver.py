@@ -6,16 +6,16 @@ Module containing SharpClaw solvers for PyClaw/PetClaw
 #  Author:      David Ketcheson
 """
 # Solver superclass
-from ..solver import Solver, CFLError
+from clawpack.pyclaw.solver import Solver, CFLError
+from clawpack.pyclaw.util import add_parent_doc
 
 # Reconstructor
 try:
     # load c-based WENO reconstructor (PyWENO)
-    from ..limiters import reconstruct as recon
+    from clawpack.pyclaw.limiters import reconstruct as recon
 except ImportError:
     # load old WENO5 reconstructor
-    from ..limiters import recon
-
+    from clawpack.pyclaw.limiters import recon
 
 def before_step(solver,solution):
     r"""
@@ -72,8 +72,9 @@ class SharpClawSolver(Solver):
 
         Type of WENO reconstruction.
         0: conservative variables WENO reconstruction (standard).
-        1: characteristic-wise WENO reconstruction.
-        2: transmission-based WENO reconstruction.
+        1: Wave-slope reconstruction.
+        2: characteristic-wise WENO reconstruction.
+        3: transmission-based WENO reconstruction.
         ``Default = 0``
 
     .. attribute:: tfluct_solver
@@ -153,6 +154,10 @@ class SharpClawSolver(Solver):
         self._mthlim = self.limiters
         self._method = None
         self._rk_stages = None
+
+        self.a = None
+        self.b = None
+        self.c = None
         
 
         # Call general initialization function
@@ -173,8 +178,8 @@ class SharpClawSolver(Solver):
         state.set_num_ghost(self.num_ghost)
         # End hack
 
-        self.allocate_rk_stages(solution)
-        self.set_mthlim()
+        self._allocate_rk_stages(solution)
+        self._set_mthlim()
 
         state = solution.states[0]
  
@@ -184,9 +189,9 @@ class SharpClawSolver(Solver):
                 self.fmod = __import__(so_name,fromlist=['clawpack.pyclaw.sharpclaw'])
             state.set_cparam(self.fmod)
             state.set_cparam(self.rp)
-            self.set_fortran_parameters(state,self.fmod.clawparams,self.fmod.workspace,self.fmod.reconstruct)
+            self._set_fortran_parameters(state,self.fmod.clawparams,self.fmod.workspace,self.fmod.reconstruct)
 
-        self.allocate_bc_arrays(state)
+        self._allocate_bc_arrays(state)
 
         self._is_set_up = True
 
@@ -258,13 +263,27 @@ class SharpClawSolver(Solver):
                     self.before_step(self,s1)
                 deltaq = self.dq(s1)
                 state.q = s2.q + 0.6 * s1.q + 0.1 * deltaq
+                
+            elif self.time_integrator=='RK':
+                # General RK with specified coefficients
+                # self._rk_stages[i].q actually stores f(y_i)
+                num_stages = len(self.b)
+                for i in range(num_stages):
+                    self._rk_stages[i].q = state.q.copy()
+                    for j in range(i):
+                        self._rk_stages[i].q += self.a[i,j]*self._rk_stages[j].q
+                    self._rk_stages[i].t = state.t + self.dt * self.c[i]
+                    self._rk_stages[i].q = self.dq(self._rk_stages[i])
+
+                for j in range(num_stages):
+                    state.q += self.b[j]*self._rk_stages[j].q
             else:
                 raise Exception('Unrecognized time integrator')
         except CFLError:
             return False
 
 
-    def set_mthlim(self):
+    def _set_mthlim(self):
         self._mthlim = self.limiters
         if not isinstance(self.limiters,list): self._mthlim=[self._mthlim]
         if len(self._mthlim)==1: self._mthlim = self._mthlim * self.num_waves
@@ -308,7 +327,7 @@ class SharpClawSolver(Solver):
         return deltaq.flatten('f')
 
 
-    def set_fortran_parameters(self,state,clawparams,workspace,reconstruct):
+    def _set_fortran_parameters(self,state,clawparams,workspace,reconstruct):
         """
         Set parameters for Fortran modules used by SharpClaw.
         The modules should be imported and passed as arguments to this function.
@@ -337,7 +356,7 @@ class SharpClawSolver(Solver):
         reconstruct.alloc_recon_workspace(maxnx,self.num_ghost,state.num_eqn,self.num_waves,
                                             clawparams.lim_type,clawparams.char_decomp)
 
-    def allocate_rk_stages(self,solution):
+    def _allocate_rk_stages(self,solution):
         r"""
         Instantiate State objects for Runge--Kutta stages.
 
@@ -350,6 +369,8 @@ class SharpClawSolver(Solver):
         if self.time_integrator   == 'Euler':  nregisters=1
         elif self.time_integrator == 'SSP33':  nregisters=2
         elif self.time_integrator == 'SSP104': nregisters=3
+        elif self.time_integrator == 'RK': 
+            nregisters=len(self.b)+2
  
         state = solution.states[0]
         # use the same class constructor as the solution for the Runge Kutta stages
@@ -376,6 +397,9 @@ class SharpClawSolver1D(SharpClawSolver):
     Used to solve 1D hyperbolic systems using the SharpClaw algorithms,
     which are based on WENO reconstruction and Runge-Kutta time stepping.
     """
+
+    __doc__ += add_parent_doc(SharpClawSolver)
+    
     def __init__(self,riemann_solver=None,claw_package=None):
         r"""
         See :class:`SharpClawSolver1D` for more info.
@@ -428,9 +452,9 @@ class SharpClawSolver1D(SharpClawSolver):
     
         import numpy as np
 
-        self.apply_q_bcs(state)
+        self._apply_q_bcs(state)
         if state.num_aux > 0:
-            self.apply_aux_bcs(state)
+            self._apply_aux_bcs(state)
         q = self.qbc 
 
         grid = state.grid
@@ -514,11 +538,11 @@ class SharpClawSolver1D(SharpClawSolver):
 # ========================================================================
 class SharpClawSolver2D(SharpClawSolver):
 # ========================================================================
-    """SharpClaw evolution routine in 2D
-    
-    This class represents the 2D SharpClaw solver.  Note that there are 
-    routines here for interfacing with the fortran time stepping routines only.
+    """ Two Dimensional SharpClawSolver
     """
+
+    __doc__ += add_parent_doc(SharpClawSolver)
+
     def __init__(self,riemann_solver=None,claw_package=None):
         r"""
         Create 2D SharpClaw solver
@@ -570,9 +594,9 @@ class SharpClawSolver2D(SharpClawSolver):
         values are in the cell.
 
         """
-        self.apply_q_bcs(state)
+        self._apply_q_bcs(state)
         if state.num_aux > 0:    
-            self.apply_aux_bcs(state)
+            self._apply_aux_bcs(state)
         q = self.qbc 
 
         grid = state.grid

@@ -1,7 +1,9 @@
 import clawpack.pyclaw
 
 class State(clawpack.pyclaw.State):
-    r"""  See the corresponding PyClaw class documentation."""
+    """Parallel State class"""
+
+    __doc__ += clawpack.pyclaw.util.add_parent_doc(clawpack.pyclaw.state)
 
     @property
     def num_eqn(self):
@@ -225,47 +227,10 @@ class State(clawpack.pyclaw.State):
 
         return DA
 
-    def set_q_from_qbc(self,num_ghost,qbc):
-        """
-        Set the value of q using the array qbc. for PetSolver, this
-        involves setting qbc as the local vector array then perform
-        a local to global communication. 
-        """
-        
-        patch = self.patch
-        if patch.num_dim == 1:
-            self.q = qbc[:,num_ghost:-num_ghost]
-        elif patch.num_dim == 2:
-            self.q = qbc[:,num_ghost:-num_ghost,num_ghost:-num_ghost]
-        elif patch.num_dim == 3:
-            self.q = qbc[:,num_ghost:-num_ghost,num_ghost:-num_ghost,num_ghost:-num_ghost]
-        else:
-            raise NotImplementedError("The case of 3D is not handled in "\
-            +"this function yet")
-
-    def set_aux_from_auxbc(self,num_ghost,auxbc):
-        """
-        Set the value of aux using the array auxbc. for PetSolver, this
-        involves setting auxbc as the local vector array then perform
-        a local to global communication. 
-        """
-        
-        patch = self.patch
-        if patch.num_dim == 1:
-            self.aux = auxbc[:,num_ghost:-num_ghost]
-        elif patch.num_dim == 2:
-            self.aux = auxbc[:,num_ghost:-num_ghost,num_ghost:-num_ghost]
-        elif patch.num_dim == 3:
-            self.aux = auxbc[:,num_ghost:-num_ghost,num_ghost:-num_ghost,num_ghost:-num_ghost]
-        else:
-            raise NotImplementedError("The case of 3D is not handled in "\
-            +"this function yet")
-
 
     def get_qbc_from_q(self,num_ghost,qbc):
         """
-        Returns q with ghost cells attached.  For PetSolver,
-        this means returning the local vector.  
+        Returns q with ghost cells attached, by accessing the local vector.
         """
         shape = [n + 2*num_ghost for n in self.grid.num_cells]
         
@@ -275,8 +240,7 @@ class State(clawpack.pyclaw.State):
             
     def get_auxbc_from_aux(self,num_ghost,auxbc):
         """
-        Returns aux with ghost cells attached.  For PetSolver,
-        this means returning the local vector.  
+        Returns aux with ghost cells attached, by accessing the local vector.
         """
         shape = [n + 2*num_ghost for n in self.grid.num_cells]
         

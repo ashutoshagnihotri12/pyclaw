@@ -11,9 +11,18 @@ import logging
 import tempfile
 import numpy as np
 
+def add_parent_doc(parent):
+    """add parent documentation for a class""" 
+    
+    return """
+    Parent Class Documentation
+    ==========================
+    """ + parent.__doc__
+
+
 def run_app_from_main(application):
     r"""
-    Runs an application from apps/, automatically parsing command line keyword
+    Runs an application from pyclaw/examples/, automatically parsing command line keyword
     arguments (key=value) as parameters to the application, with positional
     arguments being passed to PETSc (if it is enabled).
 
@@ -25,15 +34,32 @@ def run_app_from_main(application):
 
     # Arguments to the PyClaw should be keyword based, positional arguments
     # will be passed to PETSc
-    petsc_args, app_kwargs = _info_from_argv(sys.argv)
+    petsc_args, pyclaw_kwargs = _info_from_argv(sys.argv)
 
-    if 'use_petsc' in app_kwargs and app_kwargs['use_petsc']:
+    if 'use_petsc' in pyclaw_kwargs and pyclaw_kwargs['use_petsc']:
         import petsc4py
         petsc_args = [arg.replace('--','-') for arg in sys.argv[1:] if '=' not in arg]
         petsc4py.init(petsc_args)
+        from clawpack import petclaw as pyclaw
+    else:
+        from clawpack import pyclaw
 
-    output=application(**app_kwargs)
-    return output
+    app_kwargs = {key: value for key, value in pyclaw_kwargs.items() 
+                  if not key in ('htmlplot','iplot')}
+
+    claw=application(**app_kwargs)
+
+    # Solve
+    status = claw.run()
+
+    # Plot results
+    htmlplot = pyclaw_kwargs.get('htmlplot',False)
+    iplot    = pyclaw_kwargs.get('iplot',False)
+    outdir   = pyclaw_kwargs.get('outdir','./_output')
+    if htmlplot:  pyclaw.plot.html_plot(outdir=outdir)
+    if iplot:     pyclaw.plot.interactive_plot(outdir=outdir)
+
+    return claw
 
 class VerifyError(Exception):
     pass
@@ -119,8 +145,9 @@ def test_app(application, verifier, kwargs):
         except ImportError, e:
             pass
 
-    output = application(**kwargs)
-    check_values = verifier(output)
+    claw = application(**kwargs)
+    claw.run()
+    check_values = verifier(claw)
 
     if check_values is not None:
         import inspect
