@@ -186,7 +186,8 @@ class Solver(object):
         self.status = {'cflmax': -np.inf,
                        'dtmin': np.inf,
                        'dtmax': -np.inf,
-                       'numsteps': 0 }
+                       'numsteps': 0,
+                       'totalsteps' : 0}
         
         # No default BCs; user must set them
         self.bc_lower =    [None]*self.num_dim
@@ -666,12 +667,14 @@ class Solver(object):
                     self.write_gauge_values(solution)
                     # Increment number of time steps completed
                     self.status['numsteps'] += 1
+                    self.status['totalsteps'] += 1
                 else:
                     # Reject this step
                     self.logger.debug("Rejecting time step, CFL number too large")
                     if self.dt_variable:
                         state.q = q_backup
                         solution.t = told
+                        self.status['totalsteps'] += 1
                     else:
                         # Give up, we cannot adapt, abort
                         self.status['cflmax'] = \
@@ -700,12 +703,14 @@ class Solver(object):
                     self.write_gauge_values(solution)
                     # Increment number of time steps completed
                     self.status['numsteps'] += 1
+                    self.status['totalsteps'] += 1
                 else:
                     # Reject this step
                     self.logger.debug("Rejecting time step, error too large")
                     if self.dt_variable:
                         state.q = q_backup
                         solution.t = told
+                        self.status['totalsteps'] += 1
                     else:
                         # Give up, we cannot adapt, abort
                         self.status['cflmax'] = \
@@ -719,7 +724,6 @@ class Solver(object):
                     alpha = 0.7/p
                     dt_ratio  = kappa * (self.error_tolerance/err_est)**alpha
                     self.dt = self.dt*min(2.0,max(0.5,dt_ratio))
-                    print err_est, dt_ratio, self.dt, self.dt/state.grid.delta[0]
  
             # See if we are finished yet
             if solution.t >= tend or take_one_step:
