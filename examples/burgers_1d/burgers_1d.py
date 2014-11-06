@@ -19,6 +19,23 @@ The initial condition is sinusoidal, but after a short time a shock forms
 import numpy as np
 from clawpack import riemann
 
+class diffusion(object):
+    
+    def __init__(self, dx, epsilon, dm):
+        self.dx = dx
+        self.epsilon = epsilon
+        self.qloc = dm.createLocalVec()
+        self.stencil_width = dm.getStencilWidth()
+
+    def evalFunction(self, ts, t, q, qdot, f):
+        """Approximate epsilon*q_{xx} by centered finite differences"""
+        dm = ts.getDM()
+        dm.globalToLocal(q,self.qloc)
+        qloc = self.qloc
+        sw = self.stencil_width
+        f[:] = qdot[:] - self.epsilon/self.dx**2 *(qloc[sw+1:-sw+1] - 2*qloc[sw:-sw] + qloc[sw-1:-sw-1])
+
+
 def setup(use_petsc=0,kernel_language='Fortran',outdir='./_output',solver_type='classic'):
 
     if use_petsc:
@@ -42,7 +59,8 @@ def setup(use_petsc=0,kernel_language='Fortran',outdir='./_output',solver_type='
     solver.bc_lower[0] = pyclaw.BC.periodic
     solver.bc_upper[0] = pyclaw.BC.periodic
 
-    x = pyclaw.Dimension('x',0.0,1.0,500)
+    mx = 500
+    x = pyclaw.Dimension('x',0.0,1.0,mx)
     domain = pyclaw.Domain(x)
     num_eqn = 1
     state = pyclaw.State(domain,num_eqn)
@@ -50,6 +68,25 @@ def setup(use_petsc=0,kernel_language='Fortran',outdir='./_output',solver_type='
     xc = state.grid.x.centers
     state.q[0,:] = np.sin(np.pi*2*xc) + 0.50
     state.problem_data['efix']=True
+
+    from petsc4py import PETSc
+
+    J = state.q_da.createMat()
+    J.setUp()
+
+    ts = PETSc.TS().create()
+    ts.setType(ts.Type.ROSW)
+    state._init_q_da(1,2)
+    ts.setDM(state.q_da)
+    
+    epsilon  = 0.1
+    diffuse = diffusion(state.grid.delta[0],epsilon,state.q_da)
+    ts.setIFunction(diffuse.evalFunction, state.q_da.createGlobalVec())
+    ts.setIJacobian(None,J,J)
+    u = state.gqVec
+    ts.setFromOptions()
+    ts.solve(u)
+
 
     claw = pyclaw.Controller()
     claw.tfinal = 0.5
@@ -59,7 +96,7 @@ def setup(use_petsc=0,kernel_language='Fortran',outdir='./_output',solver_type='
     claw.setplot = setplot
     claw.keep_copy = True
 
-    return claw
+    #return claw
 
 
 def setplot(plotdata):
@@ -89,3 +126,5 @@ def setplot(plotdata):
 if __name__=="__main__":
     from clawpack.pyclaw.util import run_app_from_main
     output = run_app_from_main(setup,setplot)
+
+
