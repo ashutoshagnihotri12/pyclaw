@@ -1,9 +1,5 @@
 r"""
-Module containing SharpClaw solvers for PyClaw/PetClaw
-
-#  File:        sharpclaw.py
-#  Created:     2010-03-20
-#  Author:      David Ketcheson
+Module containing SharpClaw solvers for PyClaw
 """
 # Solver superclass
 from clawpack.pyclaw.solver import Solver, CFLError
@@ -23,15 +19,17 @@ def before_step(solver,solution):
     
     Replace this routine if you want to do something before each time step.
     """
-    pass
+    return
 
 def default_tfluct():
-    r"""This is a dummy routine and should never be called, check Euler1D
-        to learn how to pass tfluct functions to the sharpclaw solver
+    r"""
+    This is a dummy routine and should never be called. 
+    Look at pyclaw/examples/euler_1d/
+    to learn how to pass tfluct functions to the sharpclaw solver
     """
-    if self.tfluct_solver:
-        raise Exception("You set solver.tfluct_solver=True, but solver.tfluct has not been set.")
-    pass
+    raise Exception("solver.tfluct_solver=True, but the solver.tfluct \
+                     function has not been set.")
+
 
 class SharpClawSolver(Solver):
     r"""
@@ -265,6 +263,7 @@ class SharpClawSolver(Solver):
         `solver.time_integrator`.
         """
         state = solution.states[0]
+        dt = self.dt
 
         self.before_step(self,state)
 
@@ -272,6 +271,17 @@ class SharpClawSolver(Solver):
             if self.time_integrator=='Euler':
                 deltaq=self.dq(state)
                 state.q+=deltaq
+
+            elif self.time_integrator=='IMEX11':
+                from scipy.optimize import fsolve, root
+                deltaq=self.dq_hyperbolic(state)
+                dx = state.grid.delta[0]
+                fe = (state.q+deltaq).reshape(-1)
+                residual = lambda q : q-fe-dt*self.dq_src(q,dx)
+                qq = residual(fe)
+                #qnew = fsolve(residual,fe) #slow
+                qnew = root(residual,fe,method='krylov') #faster
+                state.q = qnew.x.reshape(state.q.shape)
 
             elif self.time_integrator=='SSP33':
                 deltaq=self.dq(state)
@@ -542,6 +552,7 @@ class SharpClawSolver(Solver):
         # Generally the number of registers for the starting method should be at most 
         # equal to the number of registers of the LMM
         if self.time_integrator   == 'Euler':   nregisters=0
+        elif self.time_integrator == 'IMEX11':  nregisters=0
         elif self.time_integrator == 'SSP33':   nregisters=1
         elif self.time_integrator == 'SSP104':  nregisters=2
         elif self.time_integrator == 'RK':      nregisters=len(self.b)+1

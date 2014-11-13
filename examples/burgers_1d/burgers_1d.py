@@ -5,13 +5,15 @@ r"""
 Burgers' equation
 =========================
 
-Solve the inviscid Burgers' equation:
+Solve Burgers' equation:
 
 .. math:: 
-    q_t + \frac{1}{2} (q^2)_x & = 0.
+    q_t + \frac{1}{2} (q^2)_x & = epsilon q_xx.
 
 This is a nonlinear PDE often used as a very simple
-model for fluid dynamics.
+model for fluid dynamics.  
+
+Unless viscous is set to true, we take epsilon=0 (the purely hyperbolic case).
 
 The initial condition is sinusoidal, but after a short time a shock forms
 (due to the nonlinearity).
@@ -19,7 +21,15 @@ The initial condition is sinusoidal, but after a short time a shock forms
 import numpy as np
 from clawpack import riemann
 
-def setup(use_petsc=0,kernel_language='Fortran',outdir='./_output',solver_type='classic'):
+def dq_diffusion(q,dx,epsilon=0.01):
+    dq = np.zeros(len(q))
+    dq[1:-1] = q[2:] - 2*q[1:-1] + q[:-2]
+    dq[0]    = q[1]  - 2*q[0]    + q[-1]
+    dq[-1]   = q[0]  - 2*q[-1]   + q[-2]
+    dq = epsilon/dx**2 * dq
+    return dq
+
+def setup(use_petsc=0,kernel_language='Fortran',outdir='./_output',solver_type='classic',viscous=False):
 
     if use_petsc:
         import clawpack.petclaw as pyclaw
@@ -33,6 +43,11 @@ def setup(use_petsc=0,kernel_language='Fortran',outdir='./_output',solver_type='
 
     if solver_type=='sharpclaw':
         solver = pyclaw.SharpClawSolver1D(riemann_solver)
+        if viscous:
+            solver.time_integrator='IMEX11'
+            solver.dq_src = dq_diffusion
+            solver.cfl_max = 1.0
+            solver.cfl_desired = 0.9
     else:
         solver = pyclaw.ClawSolver1D(riemann_solver)
         solver.limiters = pyclaw.limiters.tvd.vanleer
