@@ -21,7 +21,8 @@ The initial condition is sinusoidal, but after a short time a shock forms
 import numpy as np
 from clawpack import riemann
 
-def dq_diffusion(q,dx,epsilon=0.01):
+def dq_diffusion(q,state,epsilon=0.01):
+    dx = state.grid.delta[0]
     dq = np.zeros(len(q))
     dq[1:-1] = q[2:] - 2*q[1:-1] + q[:-2]
     dq[0]    = q[1]  - 2*q[0]    + q[-1]

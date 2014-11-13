@@ -275,9 +275,8 @@ class SharpClawSolver(Solver):
             elif self.time_integrator=='IMEX11':
                 from scipy.optimize import fsolve, root
                 deltaq=self.dq_hyperbolic(state)
-                dx = state.grid.delta[0]
                 fe = (state.q+deltaq).reshape(-1)
-                residual = lambda q : q-fe-dt*self.dq_src(q,dx)
+                residual = lambda q : q-fe-dt*self.dq_src(q,state)
                 qq = residual(fe)
                 #qnew = fsolve(residual,fe) #slow
                 qnew = root(residual,fe,method='krylov') #faster
