@@ -139,7 +139,7 @@ contains
 
         integer :: num_eqn, mx2
 
-        mx2  = size(q,2); num_eqn = size(q,1)
+        mx2  = size(q,2)
 
         !loop over all equations (all components).  
         !the reconstruction is performed component-wise;
@@ -582,48 +582,40 @@ contains
     end subroutine weno5_fwave
 
     ! ===================================================================
-    subroutine tvd2(q,ql,qr,mthlim,num_eqn)
+    subroutine tvd2(q,ql,qr,mthlim,num_eqn,maxnx,num_ghost,mx)
     ! ===================================================================
     ! Second order TVD reconstruction
 
         implicit double precision (a-h,o-z)
 
-        integer,          intent(in) :: num_eqn 
-        double precision, intent(in) :: q(:,:)
-        integer, intent(in) :: mthlim(:)
-        double precision, intent(out) :: ql(:,:),qr(:,:)
-        integer :: mx2
-
-        mx2  = size(q,2)
+        integer,          intent(in) :: num_eqn, maxnx, num_ghost 
+        double precision, intent(in) :: q(num_eqn,1-num_ghost:mx+num_ghost)
+        integer, intent(in) :: mthlim(num_eqn)
+        double precision, intent(out) :: ql(num_eqn,1-num_ghost:maxnx+num_ghost)
+        double precision, intent(out) :: qr(num_eqn,1-num_ghost:maxnx+num_ghost)
 
         ! loop over all equations (all components).  
         ! the reconstruction is performed component-wise
-
         do m=1,num_eqn
 
-            ! compute and store the differences of the cell averages
+            !dqp = q(m,num_ghost)-q(m,num_ghost-1)
 
-            do i=1,mx2-1
-                dqm=dqp
-                dqp=q(m,i+1)-q(m,i)
+            do i=2-num_ghost, mx+num_ghost-1
+                dqm=q(m,i)-q(m,i-1) ! dq-minus: left-sided difference
+                dqp=q(m,i+1)-q(m,i) ! dq-plus: right-sided difference
                 r=dqp/dqm
 
                 select case(mthlim(m))
-                case(1)
-                    ! minmod
+                case(1) ! minmod
                     qlimitr = dmax1(0.d0, dmin1(1.d0, r))
-                case(2)
-                    ! superbee
+                case(2) ! superbee
                     qlimitr = dmax1(0.d0, dmin1(1.d0, 2.d0*r), dmin1(2.d0, r))
-                case(3)
-                    ! van Leer
+                case(3) ! van Leer
                     qlimitr = (r + dabs(r)) / (1.d0 + dabs(r))
-                case(4)
-                    ! monotonized centered
+                case(4) ! monotonized centered
                     c = (1.d0 + r)/2.d0
                     qlimitr = dmax1(0.d0, dmin1(c, 2.d0, 2.d0*r))
-                case(5)
-                    ! Cada & Torrilhon simple
+                case(5) ! Cada & Torrilhon simple
                     beta=2.d0
                     xgamma=2.d0
                     alpha=1.d0/3.d0
