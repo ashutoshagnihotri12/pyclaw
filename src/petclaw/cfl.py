@@ -14,10 +14,7 @@ class CFL(object):
         
     def get_global_max(self):
         r"""
-        Compute the maximum CFL number over all processes for the current step.
-
-        This is used to determine whether the CFL condition was
-        violated and adjust the timestep.
+        Compute the maximum CFL number over all processes.
         """
         self._reduce_vec.array = self._local_max
         self._global_max = self._reduce_vec.max()[1]

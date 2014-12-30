@@ -1,6 +1,7 @@
 r"""
-Module for the CFL object, which is responsible for computing and enforcing the
-Courant-Friedrichs-Lewy condition.
+Module for the CFL object, which is responsible for computing the CFL number.
+This is the serial version, which does almost nothing.  The structure is designed
+to accommodate the parallel version (petclaw.CFL).
 """
 
 class CFL(object):
@@ -8,12 +9,6 @@ class CFL(object):
         self._global_max = global_max
         
     def get_global_max(self):
-        r"""
-        Compute the maximum CFL number over all processes for the current step.
-
-        This is used to determine whether the CFL condition was
-        violated and adjust the timestep.
-        """
         return self._global_max
 
     def get_cached_max(self):
