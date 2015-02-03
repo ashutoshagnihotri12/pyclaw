@@ -184,6 +184,7 @@ class SharpClawSolver(Solver):
         self.cfl_max = None
         self.dq_src = None
         self.dq_stored = None
+        self.dq_old = None
         self.call_before_step_each_stage = False
         self._mthlim = self.limiters
         self._method = None
@@ -278,19 +279,19 @@ class SharpClawSolver(Solver):
 
         self.before_step(self,state)
 
+        step_index = self.status['numsteps'] + 1
+
+        if step_index == 1:
+            self.dq_stored = self.dq(state)
+            self.dt_old = 1.
+
+        self.dq_stored = (self.dt/self.dt_old) * self.dq_stored
+
         if self.time_integrator=='Euler':
-            if self.status['numsteps'] == 0:
-                deltaq = self.dq(state)
-            else:
-                deltaq = self.dt/self.dt_old * self.dq_stored
-            state.q += deltaq
+            state.q += self.dq_stored
 
         elif self.time_integrator=='SSP33':
-            if self.status['numsteps'] == 0:
-                deltaq = self.dq(state)
-            else:
-                deltaq = self.dt/self.dt_old * self.dq_stored
-            self._registers[0].q = state.q + deltaq
+            self._registers[0].q = state.q + self.dq_stored
             self._registers[0].t = state.t + self.dt
 
             if self.call_before_step_each_stage:
@@ -322,17 +323,13 @@ class SharpClawSolver(Solver):
                 state.q += self.b[j]*self._registers[j].q
 
         elif self.time_integrator == 'SSPLMM32':
-            step_index = self.status['numsteps'] + 1
             if step_index == 1:
                 self.sspcoeff0 = self._sspcoeff['Euler']
                 # Store initial solution and function evaluation
                 self._registers[-1].q = state.q.copy()
                 self._registers[-1].t = state.t
-                self.dq_stored = self.dq(state)
             if step_index < 3:
                 # Use Euler method for starting values
-                if self.dt_list:
-                   self.dq_stored = self.dt/self.dt_list[-1] * self.dq_stored
                 state.q += self.dq_stored
                 if step_index == 2:
                     self.sspcoeff0 = self._sspcoeff[self.time_integrator]
@@ -344,8 +341,7 @@ class SharpClawSolver(Solver):
                 delta = 1./omega2**2
                 beta = (omega2+1.)/omega2
 
-                deltaq = self.dt/self.dt_list[-1] * self.dq_stored
-                state.q = beta*(r*state.q + deltaq) + delta*self._registers[-3].q
+                state.q = beta*(r*state.q + self.dq_stored) + delta*self._registers[-3].q
  
 
         elif self.time_integrator == 'SSPLMM43':
@@ -419,6 +415,14 @@ class SharpClawSolver(Solver):
             raise Exception('Unrecognized time integrator')
             return False
 
+        # store function evaluation in case we reject step
+        self.dq_old = self.dq_stored 
+
+        # update stored function evaluation and CFL number
+        self.dq_stored = self.dq(state)
+ 
+
+
 
     def ssp104(self,state):
         if self.time_integrator == 'SSP104':
@@ -431,11 +435,7 @@ class SharpClawSolver(Solver):
             s1 = copy.deepcopy(state)
             s2 = copy.deepcopy(s1)
 
-        if self.status['numsteps'] == 0:
-            deltaq = self.dq(state)
-        else:
-            deltaq = self.dt/self.dt_old * self.dq_stored
-        s1.q = state.q + deltaq/6.
+        s1.q = state.q + self.dq_stored/6.
         s1.t = state.t + self.dt/6.
 
         for i in xrange(4):
@@ -567,16 +567,16 @@ class SharpClawSolver(Solver):
         For Runge-Kutta methods the step is accepted if cfl <= cfl_max.
         For SSPLMM32 the choice of step-size guarantees the cfl condition is satisfied.
         For SSPLMM43 additional checks on previous forward Euler step-sizes are required.
+
+        This function has the side-effect of also computing solver.dq and putting it
+        in solver.dq_stored for use in the next time step.  This is undesirable but
+        seems hard to avoid.
         """
         accept_step = True
 
-        # store function evaluation in case we reject step
-        dq_backup = self.dq_stored 
 
-        # update stored function evaluation and CFL number
-        self.dq_stored = self.dq(state)
         cfl = self.cfl.get_cached_max()
-        
+       
         # check cfl condition for SSP LMM methods
         if self.time_integrator[:6] == 'SSPLMM':
             step_index = self.status['numsteps'] + 1
@@ -585,11 +585,11 @@ class SharpClawSolver(Solver):
             if step_index < len(self._registers):
                 if cfl > self.cfl_max:
                     accept_step = False
-                    self.dq_stored = dq_backup
+                    self.dq_stored = self.dq_old
                 # additional condition for SSPLMM43
                 elif self.time_integrator == 'SSPLMM43' and self.dt > 3./5. * self.dtFE_list[-1]:
                     accept_step = False
-                    self.dq_stored = dq_backup
+                    self.dq_stored = self.dq_old
             # only need to check conditions for SSPLMM43 for the steps LMM is active
             elif self.time_integrator == 'SSPLMM43':
                 rhoFE = 9./10.
@@ -597,7 +597,7 @@ class SharpClawSolver(Solver):
                 dtFEm1 = self.dtFE_list[-2]
                 if rhoFE * dtFEm1 > dtFE or dtFE > dtFEm1 / rhoFE:
                     accept_step = False
-                    self.dq_stored = dq_backup
+                    self.dq_stored = self.dq_old
 
             # update dt_list, dtFE_list
             if accept_step:
@@ -623,7 +623,7 @@ class SharpClawSolver(Solver):
         # check cfl condition for Runge-Kutta methods
         elif cfl > self.cfl_max:
             accept_step = False
-            self.dq_stored = dq_backup
+            self.dq_stored = self.dq_old
 
         return accept_step
 
