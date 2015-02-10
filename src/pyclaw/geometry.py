@@ -644,9 +644,15 @@ class Dimension(object):
 # ============================================================================
 class Patch(object):
     """
-    :Global Patch information:
-    
-        Each patch has a value for :attr:`level` and :attr:`patch_index`.
+    In serial, Patch carries almost the same information as Grid.
+    In parallel, the Patch dimensions give the full extent of the
+    patch, whereas the Grid dimensions give the extent of the part
+    allocated to a given process.
+
+    A Patch must be initialized from a set of Dimensions (and not from
+    a Grid).
+
+    Additionally, each patch has a value for :attr:`level` and :attr:`patch_index`.
     """
     # Global properties
     @property
@@ -719,6 +725,7 @@ class Patch(object):
         Returns a tuple of all dimensions' attribute attr
         """
         return [getattr(getattr(self,name),attr) for name in self._dimensions]
+
     def __deepcopy__(self,memo={}):
         import copy
         result = self.__class__(copy.deepcopy(self.dimensions))
