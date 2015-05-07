@@ -26,6 +26,7 @@ install:
 
 script:
   - cd pyclaw/src/pyclaw
+  - pwd
   - nosetests --first-pkg-wins --with-doctest --exclude=limiters --exclude=sharpclaw --exclude=io --exclude=example
   - if [[ "${TEST_PACKAGE}" == "pyclaw" ]]; then
         nosetests -v --first-pkg-wins --exclude=limiters --exclude=sharpclaw --exclude=io --with-coverage --cover-package=clawpack.pyclaw;
