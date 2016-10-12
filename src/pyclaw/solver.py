@@ -531,15 +531,16 @@ class Solver(object):
         self.dt = min(self.dt_max,self.dt * self.cfl_desired / cfl)
 
     def get_dt(self,t,tstart,tend,take_one_step):
-        cfl = self.cfl.get_cached_max()
-        if self.dt_variable and self.dt_old is not None:
-            if cfl > 0.0:
-                self.get_dt_new()
-                self.status['dtmin'] = min(self.dt, self.status['dtmin'])
-                self.status['dtmax'] = max(self.dt, self.status['dtmax'])
-            else:
-                self.dt = self.dt_max
-        else:
+        if self.error_tolerance is None:
+            cfl = self.cfl.get_cached_max()
+            if self.dt_variable and self.dt_old is not None:
+                if cfl > 0.0:
+                    self.get_dt_new()
+                    self.status['dtmin'] = min(self.dt, self.status['dtmin'])
+                    self.status['dtmax'] = max(self.dt, self.status['dtmax'])
+                else:
+                    self.dt = self.dt_max
+        if self.dt_old is None:
             self.dt_old = self.dt
 
         # Adjust dt so that we hit tend exactly if we are near tend
@@ -608,8 +609,34 @@ class Solver(object):
                 self.before_step(self,solution.states[0])
 
             # Note that the solver may alter dt during the step() routine
-            self.step(solution,take_one_step,tstart,tend)
+            err_est = self.step(solution,take_one_step,tstart,tend)
 
+            if err_est not in (True,False,None):
+                # Time step control based on error estimation
+                assert(self.dt_variable)
+                assert(self.error_tolerance>0)
+                if err_est <= self.error_tolerance:
+                    # accept step
+                    solution.t += self.dt
+                else:
+                    state.q = q_backup
+                    solution.t = told
+                # Choose new step size
+                kappa = 0.9
+                p = 3.0
+                alpha = 0.7/p
+                dt_ratio = kappa * (self.error_tolerance/err_est)**alpha
+                self.dt_old = self.dt+0.
+                self.dt = self.dt * min(2.0, max(0.5, dt_ratio))
+
+                if solution.t >= tend or take_one_step:
+                    break
+
+                continue
+            # End error-estimation-based time step control
+
+
+            # Time step control based on CFL number
             # Check to make sure that the Courant number was not too large
             cfl = self.cfl.get_cached_max()
             self.accept_step = self.accept_reject_step(state)

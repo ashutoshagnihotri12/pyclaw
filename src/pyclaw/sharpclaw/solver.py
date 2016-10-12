@@ -181,6 +181,10 @@ class SharpClawSolver(Solver):
         self.b = None
         self.c = None
 
+        # Used only for automatic step size control (experimental)
+        self.b_hat = None
+        self.error_tolerance = None
+
         # Used only if time integrator is a multistep method
         self.sspcoeff0 = None
         self.alpha = None
@@ -284,6 +288,7 @@ class SharpClawSolver(Solver):
         Take one step with a Runge-Kutta or multistep method as specified by
         `solver.time_integrator`.
         """
+        err_est = None
         state = solution.states[0]
         step_index = self.status['numsteps'] + 1
         if self.accept_step == True:
@@ -343,6 +348,17 @@ class SharpClawSolver(Solver):
             for j in range(num_stages):
                 state.q += self.b[j]*self._registers[j].q
 
+            if self.b_hat is not None: # Compute error estimate
+                # HACK: set this to zero the right way
+                self._registers[num_stages].q =0*state.q
+                for j in range(num_stages):
+                    self._registers[num_stages].q += (self.b[j]-self.b_hat[j]) * self._registers[j].q
+                # HACK: Should really sum over all components
+                import numpy as np
+                err_est = np.linalg.norm(self._registers[num_stages].q[0,:])*state.grid.delta[0]
+                return err_est
+
+
         ### Linear multistep methods ###
         elif self.time_integrator in ['SSPLMMk2', 'SSPLMMk3']:
             num_steps = self.lmm_steps
@@ -381,7 +397,6 @@ class SharpClawSolver(Solver):
 
         else:
             raise Exception('Unrecognized time integrator')
-            return False
 
 
     def ssp22(self,state):
@@ -595,7 +610,7 @@ class SharpClawSolver(Solver):
         if self.time_integrator   == 'Euler':   nregisters=0
         elif self.time_integrator == 'SSP33':   nregisters=1
         elif self.time_integrator == 'SSP104':  nregisters=1
-        elif self.time_integrator == 'RK':      nregisters=len(self.b)+1
+        elif self.time_integrator == 'RK':      nregisters=len(self.b)+2
         elif self.time_integrator == 'SSPLMMk2': nregisters=self.lmm_steps
         elif self.time_integrator == 'SSPLMMk3': nregisters=self.lmm_steps
         elif self.time_integrator == 'LMM': nregisters=len(self.alpha)
