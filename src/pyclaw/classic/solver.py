@@ -136,7 +136,7 @@ class ClawSolver(Solver):
         self.step_hyperbolic(solution)
 
         # Check here if the CFL condition is satisfied. 
-        # If not, return # immediately to evolve_to_time and let it deal with
+        # If not, return immediately to evolve_to_time and let it deal with
         # picking a new step size (dt).
         if self.cfl.get_cached_max() >= self.cfl_max:
             return False

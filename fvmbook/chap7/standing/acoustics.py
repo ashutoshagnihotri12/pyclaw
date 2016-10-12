@@ -7,6 +7,7 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
     medium.
     """
     import numpy as np
+    from clawpack import riemann
 
     #=================================================================
     # Import the appropriate classes, depending on the options passed
@@ -16,10 +17,12 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
     else:
         from clawpack import pyclaw
 
+    riemann_solver = riemann.acoustics_1D
+
     if solver_type=='classic':
-        solver = pyclaw.ClawSolver1D()
+        solver = pyclaw.ClawSolver1D(riemann_solver)
     elif solver_type=='sharpclaw':
-        solver = pyclaw.SharpClawSolver1D()
+        solver = pyclaw.SharpClawSolver1D(riemann_solver)
         solver.weno_order=weno_order
         solver.time_integrator = 'RK'
         from nodepy import rk
@@ -29,37 +32,34 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
         solver.A = rkm.A
         solver.b = rkm.b
         #solver.b_hat = np.array([1./3,1./3,1./3,0.])
-        #solver.b_hat = rkm.bhat
+        solver.b_hat = rkm.bhat
         solver.c = rkm.c
-        #solver.error_tolerance = 1.e-5
+        solver.error_tolerance = 1.e-2
         solver.dt_variable = True
-        solver.cfl_max = 3.
+        solver.cfl_max = 10.
         solver.cfl_desired = 1.5
+        solver.dt_initial = 1.e-3
     else: raise Exception('Unrecognized value of solver_type.')
 
     #========================================================================
     # Instantiate the solver and define the system of equations to be solved
     #========================================================================
     solver.kernel_language=kernel_language
-    from clawpack.riemann import rp_acoustics
-    solver.num_waves=rp_acoustics.num_waves
-    if kernel_language=='Python': 
-        solver.rp = rp_acoustics.rp_acoustics_1d
  
     solver.limiters = pyclaw.limiters.tvd.MC
     solver.bc_lower[0] = pyclaw.BC.wall
     solver.bc_upper[0] = pyclaw.BC.wall
 
-    solver.cfl_desired = 1.0
-    solver.cfl_max     = 1.0
+    #solver.cfl_desired = 1.0
+    #solver.cfl_max     = 1.0
 
     #========================================================================
     # Instantiate the grid and set the boundary conditions
     #========================================================================
     x = pyclaw.Dimension('x',0.0,1.0,200)
-    grid = pyclaw.Grid(x)
+    domain = pyclaw.Domain(x)
     num_eqn = 2
-    state = pyclaw.State(grid,num_eqn)
+    state = pyclaw.State(domain,num_eqn)
 
     #========================================================================
     # Set problem-specific variables
@@ -74,7 +74,7 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
     #========================================================================
     # Set the initial condition
     #========================================================================
-    xc=grid.x.center
+    xc = domain.grid.x.centers
     state.q[0,:] = np.cos(2*np.pi*xc)
     state.q[1,:] = 0.
     solver.dt_initial=domain.grid.delta[0]/state.problem_data['cc']*0.01
@@ -83,19 +83,22 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
     # Set up the controller object
     #========================================================================
     claw = pyclaw.Controller()
-    claw.solution = pyclaw.Solution(state)
+    claw.solution = pyclaw.Solution(state, domain)
     claw.solver = solver
     claw.outdir = outdir
     claw.num_output_times = 40
-    claw.tfinal = 2.0
+    claw.tfinal = 2.
 
     # Solve
     status = claw.run()
 
     # Plot results
-    if htmlplot:  pyclaw.plot.html_plot(outdir=outdir)
-    if iplot:     pyclaw.plot.interactive_plot(outdir=outdir)
+    #if htmlplot:  pyclaw.plot.html_plot(outdir=outdir)
+    #if iplot:     pyclaw.plot.interactive_plot(outdir=outdir)
+
+    return claw
 
 if __name__=="__main__":
+    from setplot import setplot
     from clawpack.pyclaw.util import run_app_from_main
-    output = run_app_from_main(acoustics)
+    output = run_app_from_main(acoustics,setplot)
