@@ -474,6 +474,9 @@ class OutputController(object):
         self.file_format = file_format
         self.output_path = output_path
 
+    def __del__(self):
+        self.solver.__del__()
+
 
     def get_time(self, frame_num):
         r"""Get the time for the specified frame number.

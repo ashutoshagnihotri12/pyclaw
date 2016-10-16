@@ -179,6 +179,7 @@ class Solver(object):
         self._use_old_bc_sig = False
         self.accept_step = True
         self.before_step = None
+        self.error_tolerance = None
 
         # select package to build solver objects from, by default this will be
         # the package that contains the module implementing the derived class
@@ -204,6 +205,8 @@ class Solver(object):
         self.status = {'cflmax': -np.inf,
                        'dtmin': np.inf,
                        'dtmax': -np.inf,
+                       'dt_hist': [],
+                       'totalsteps' : 0, # includes rejected steps
                        'numsteps': 0 }
         
         # No default BCs; user must set them
@@ -595,6 +598,8 @@ class Solver(object):
             self.logger.info("Already at or beyond end time: no evolution required.")
             self.max_steps = 0
  
+        err_est_old = self.error_tolerance
+
         # Main time-stepping loop
         for n in xrange(self.max_steps):
  
@@ -615,19 +620,35 @@ class Solver(object):
                 # Time step control based on error estimation
                 assert(self.dt_variable)
                 assert(self.error_tolerance>0)
-                if err_est <= self.error_tolerance:
+                self.status['totalsteps'] += 1
+
+                # Choose new step size
+                theta = 0.4
+                pi3040 = np.array([0.7, -0.4])
+                pi4020 = np.array([0.6, -0.2])
+                #beta = (1-theta)*pi3040 + theta*pi4020
+                pi211  = np.array([1./6, 1./6])
+                beta = pi211
+                tol = self.error_tolerance
+                q = 5.
+                cnm1 = (tol/err_est)**(1./q)
+                cnm2 = (tol/err_est_old)**(1./q)
+                step_ratio = cnm1**beta[0] * cnm2**beta[1]
+
+                if step_ratio > 0.8:
                     # accept step
+                    num_steps += 1
+                    self.status['numsteps'] += 1
+                    self.status['dt_hist'].append(self.dt)
                     solution.t += self.dt
+                    self.dt_old = self.dt + 0.
+                    err_est_old = err_est + 0.
                 else:
+                    # reject step
                     state.q = q_backup
                     solution.t = told
-                # Choose new step size
-                kappa = 0.9
-                p = 3.0
-                alpha = 0.7/p
-                dt_ratio = kappa * (self.error_tolerance/err_est)**alpha
-                self.dt_old = self.dt+0.
-                self.dt = self.dt * min(2.0, max(0.5, dt_ratio))
+
+                self.dt = self.dt * step_ratio
 
                 if solution.t >= tend or take_one_step:
                     break

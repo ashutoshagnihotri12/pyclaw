@@ -22,7 +22,7 @@ from numpy import sqrt, exp, cos
 from clawpack import riemann
     
 def setup(use_petsc=False, kernel_language='Fortran', solver_type='classic', outdir='./_output', ptwise=False, \
-        weno_order=5, time_integrator='SSP104', disable_output=False):
+        weno_order=5, time_integrator='SSP104', disable_output=False, tol=1.e-5, method='RK34'):
 
     if use_petsc:
         import clawpack.petclaw as pyclaw
@@ -34,17 +34,28 @@ def setup(use_petsc=False, kernel_language='Fortran', solver_type='classic', out
     solver = pyclaw.SharpClawSolver1D(riemann_solver)
     solver.weno_order=weno_order
     solver.time_integrator = 'RK'
-    from nodepy import rk
-    import numpy as np
-    rkm = rk.loadRKM('DP5').__num__()
-    solver.a = rkm.A
-    solver.b = rkm.b
-    solver.b_hat = rkm.bhat
-    solver.c = rkm.c
-    solver.error_tolerance = 1.e-5
+
+    if method == 'DP5':
+        from nodepy import rk
+        rkm = rk.loadRKM('DP5').__num__()
+        solver.a = rkm.A
+        solver.b = rkm.b
+        solver.b_hat = rkm.bhat
+        solver.c = rkm.c
+
+    elif method == 'RK34':
+        # RK34 pair from Soderlind
+        import numpy as np
+        solver.a = np.zeros( (5,5) )
+        solver.a[1,0] = 1./2; solver.a[2,1]=1./2; solver.a[3,2]=1.
+        solver.a[4,0] = -1.; solver.a[4,1] = 2.
+        solver.b = np.array( (1.,2.,2.,1.,0.) )/6.
+        solver.b_hat = np.array( (1.,4., 0., 0., 1.) )/6.
+        solver.c = np.sum(solver.a,1)
+
+    solver.error_tolerance = tol
     solver.dt_variable = True
     solver.cfl_max = 10.
-    solver.dt_initial = 1.e-5
 
     solver.kernel_language=kernel_language
 
@@ -69,14 +80,14 @@ def setup(use_petsc=False, kernel_language='Fortran', solver_type='classic', out
     state.q[0,:] = exp(-beta * (xc-x0)**2) * cos(gamma * (xc - x0))
     state.q[1,:] = 0.
 
-    solver.dt_initial=domain.grid.delta[0]/state.problem_data['cc']*0.1
+    solver.dt_initial=domain.grid.delta[0]/state.problem_data['cc']
 
     claw = pyclaw.Controller()
     claw.solution = pyclaw.Solution(state,domain)
     claw.solver = solver
     claw.outdir = outdir
     claw.keep_copy = True
-    claw.num_output_times = 10
+    claw.num_output_times = 1
     if disable_output:
         claw.output_format = None
     claw.tfinal = 1.0
