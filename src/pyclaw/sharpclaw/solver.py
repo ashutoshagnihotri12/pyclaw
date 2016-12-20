@@ -183,7 +183,6 @@ class SharpClawSolver(Solver):
 
         # Used only for automatic step size control (experimental)
         self.b_hat = None
-        self.error_tolerance = None
 
         # Used only if time integrator is a multistep method
         self.sspcoeff0 = None
@@ -355,7 +354,7 @@ class SharpClawSolver(Solver):
                     self._registers[num_stages].q += (self.b[j]-self.b_hat[j]) * self._registers[j].q
                 # HACK: Should really sum over all components
                 import numpy as np
-                err_est = np.linalg.norm(self._registers[num_stages].q[0,:])*state.grid.delta[0]
+                err_est = sum([np.linalg.norm(self._registers[num_stages].q[i,:])*state.grid.delta[0] for i in range(state.num_eqn)])
                 return err_est
 
 
