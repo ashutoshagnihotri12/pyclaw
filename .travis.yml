@@ -37,6 +37,7 @@ install:
   - conda install -c conda-forge mpich mpi4py
   - conda install matplotlib nose coverage
   - conda install -c clawpack hdf5-parallel
+  - pip install nose-timer
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
       conda install -c clawpack -c conda-forge h5py-parallel=2.6.0=py35_0;
     else
@@ -56,9 +57,9 @@ script:
         nosetests -v --first-pkg-wins --exclude=limiters --exclude=sharpclaw --with-coverage --cover-package=clawpack.pyclaw --include=IOTest;
     fi
   - if [[ "${TEST_PACKAGE}" == "petclaw" ]]; then
-       mpirun -n 4 nosetests -v --first-pkg-wins --exclude=limiters --exclude=sharpclaw --exclude=io;
+       mpirun -n 4 nosetests -v --first-pkg-wins --exclude=limiters --exclude=sharpclaw --exclude=io --with-timer;
        cd ../petclaw/tests;
-       mpirun -n 4 nosetests -v --first-pkg-wins --include=IOTest;
+       mpirun -n 4 nosetests -v --first-pkg-wins --include=IOTest --with-timer;
        cd ../../pyclaw;
     fi
   - mv temp .coverage.doctest
